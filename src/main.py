@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from hex_tools import *
+from utils import *
 
 
 def test_map():
