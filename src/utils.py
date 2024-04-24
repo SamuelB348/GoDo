@@ -83,14 +83,3 @@ def start_board(size: int) -> Board:
             else:
                 list_boxes.append(Box(q, r, -q - r, 0))
     return Board(list_boxes, n)
-
-
-def main():
-    b = start_board(4)
-    b.pplot()
-    for move in b.legals(1):
-        print(move[0], move[1])
-
-
-if __name__ == "__main__":
-    main()
