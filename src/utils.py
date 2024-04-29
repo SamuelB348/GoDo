@@ -25,6 +25,7 @@ class Board:
     def legals(self, player: Player) -> list[tuple[Hex, Hex]]:
         legals: list[tuple[Hex, Hex]] = []
         for box in self.boxes:
+            # différencier le cas en fonction du joueur
             if box.player == player:
                 for i in range(1, 4):
                     if (
