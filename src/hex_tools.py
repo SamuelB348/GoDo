@@ -16,65 +16,47 @@ class Point:
 
 
 class Hex:
-    def __init__(self, q, r, s):
-        assert not (round(q + r + s) != 0), "q + r + s must be 0"
+    def __init__(self, q, r):
         self.q = q
         self.r = r
-        self.s = s
 
     def __add__(self, other):
-        return Hex(self.q + other.q, self.r + other.r, self.s + other.s)
+        return Hex(self.q + other.q, self.r + other.r)
 
     def __sub__(self, other):
-        return Hex(self.q - other.q, self.r - other.r, self.s - other.s)
+        return Hex(self.q - other.q, self.r - other.r)
 
     def scale(self, k):
-        return Hex(self.q * k, self.r * k, self.s * k)
+        return Hex(self.q * k, self.r * k)
 
     def rotate_left(self):
-        return Hex(-self.s, -self.q, -self.r)
+        return Hex(-self.q, -self.r)
 
     def rotate_right(self):
-        return Hex(-self.r, -self.s, -self.q)
+        return Hex(-self.r, -self.q)
 
     def neighbor(self, direction):
         return self + hex_direction(direction)
 
-    def diagonal_neighbor(self, direction):
-        return self + hex_diagonals[direction]
-
-    def length(self):
-        return (abs(self.q) + abs(self.r) + abs(self.s)) // 2
-
     def to_tuple(self):
-        return self.q, self.r, self.s
+        return self.q, self.r
 
     def __str__(self):
-        return f"(q: {self.q}, r: {self.r}, s: {self.s})"
+        return f"(q: {self.q}, r: {self.r})"
 
 
 hex_directions = [
-    Hex(1, 0, -1),
-    Hex(1, -1, 0),
-    Hex(0, -1, 1),
-    Hex(-1, 0, 1),
-    Hex(-1, 1, 0),
-    Hex(0, 1, -1),
+    Hex(-1, 0),
+    Hex(0, 1),
+    Hex(1, 1),
+    Hex(1, 0),
+    Hex(0, -1),
+    Hex(-1, -1),
 ]
 
 
 def hex_direction(direction) -> Hex:
     return hex_directions[direction]
-
-
-hex_diagonals = [
-    Hex(2, -1, -1),
-    Hex(1, -2, 1),
-    Hex(-1, -1, 2),
-    Hex(-2, 1, 1),
-    Hex(-1, 2, -1),
-    Hex(1, 1, -2),
-]
 
 
 class Orientation:
@@ -122,9 +104,9 @@ layout_pointy = Orientation(
 
 layout_flat = Orientation(
     3.0 / 2.0,
-    0.0,
-    math.sqrt(3.0) / 2.0,
-    math.sqrt(3.0),
+    -3.0 / 2.0,
+    -math.sqrt(3.0) / 2.0,
+    -math.sqrt(3.0) / 2.0,
     2.0 / 3.0,
     0.0,
     -1.0 / 3.0,
@@ -149,7 +131,7 @@ def pixel_to_hex(layout: Layout, p: Point) -> Hex:
     pt = Point((p.x - origin.x) / size.x, (p.y - origin.y) / size.y)
     q = m.b0 * pt.x + m.b1 * pt.y
     r = m.b2 * pt.x + m.b3 * pt.y
-    return Hex(q, r, -q - r)
+    return Hex(q, r)
 
 
 def hex_corner_offset(layout: Layout, corner: int) -> Point:
