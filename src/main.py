@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 from utils import *
 
 
@@ -9,5 +8,5 @@ def main():
         print(move[0], move[1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

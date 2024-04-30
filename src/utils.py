@@ -8,12 +8,14 @@ Evaluation = float
 
 
 class Box:
-    def __init__(self, q: int, r: int, s: int, p: Player):
-        self.coordinates = Hex(q, r, s)
+    def __init__(self, q: int, r: int, p: Player):
+        self.coordinates = Hex(q, r)
         self.player = p
 
     def __str__(self):
-        return f"q: {self.coordinates.q}, r: {self.coordinates.r}, s: {self.coordinates.s}, couleur: {self.player}"
+        return (
+            f"q: {self.coordinates.q}, r: {self.coordinates.r}, couleur: {self.player}"
+        )
 
 
 class Board:
@@ -25,6 +27,7 @@ class Board:
     def legals(self, player: Player) -> list[tuple[Hex, Hex]]:
         legals: list[tuple[Hex, Hex]] = []
         for box in self.boxes:
+            # différencier le cas en fonction du joueur
             if box.player == player:
                 for i in range(1, 4):
                     if (
@@ -63,7 +66,12 @@ class Board:
                 plt.plot(center.x, center.y, marker="o", markersize=10, color="red")
             elif box.player == 2:
                 plt.plot(center.x, center.y, marker="o", markersize=10, color="blue")
-
+            plt.text(
+                center.x,
+                center.y,
+                f"{box.coordinates.q}, {box.coordinates.r}",
+                horizontalalignment="right",
+            )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
@@ -72,14 +80,14 @@ class Board:
 def start_board(size: int) -> Board:
     list_boxes: list[Box] = []
     n = size - 1
-    for q in range(-n, n + 1):
-        r1 = max(-n, -q - n)
-        r2 = min(n, -q + n)
-        for r in range(r1, r2 + 1):
-            if r > -q - r + (size - 3):
-                list_boxes.append(Box(q, r, -q - r, R))
-            elif -q - r > r + (size - 3):
-                list_boxes.append(Box(q, r, -q - r, B))
+    for r in range(n, -n - 1, -1):
+        q1 = max(-n, r - n)
+        q2 = min(n, r + n)
+        for q in range(q1, q2 + 1):
+            if -q > r + (size - 3):
+                list_boxes.append(Box(q, r, R))
+            elif r > -q + (size - 3):
+                list_boxes.append(Box(q, r, B))
             else:
-                list_boxes.append(Box(q, r, -q - r, 0))
+                list_boxes.append(Box(q, r, 0))
     return Board(list_boxes, n)
