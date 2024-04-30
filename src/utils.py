@@ -1,10 +1,14 @@
 from hex_tools import *
+from typing import Callable
 import matplotlib.pyplot as plt
 
 Player = int
 R = 1
 B = 2
 Evaluation = float
+Action = tuple[Hex, Hex]
+Score = float
+
 
 
 class Box:
@@ -31,11 +35,11 @@ class Board:
             if box.player == player:
                 for i in range(1, 4):
                     if (
-                        box.coordinates.neighbor(i).to_tuple() in self.linkage_table
-                        and self.linkage_table[
-                            box.coordinates.neighbor(i).to_tuple()
-                        ].player
-                        == 0
+                            box.coordinates.neighbor(i).to_tuple() in self.linkage_table
+                            and self.linkage_table[
+                        box.coordinates.neighbor(i).to_tuple()
+                    ].player
+                            == 0
                     ):
                         legals.append((box.coordinates, box.coordinates.neighbor(i)))
         return legals
@@ -91,3 +95,26 @@ def start_board(size: int) -> Board:
             else:
                 list_boxes.append(Box(q, r, 0))
     return Board(list_boxes, n)
+
+
+State = Board
+Strategy = Callable[[State, Player], Action]
+
+def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
+    new_boxes: list[Box] = []
+    for i in range(len(b.boxes)):
+        if not (b.boxes[i].coordinates.q == action[0].q and b.boxes[i].coordinates.r == action[0].r and b.boxes[i].player == player):
+            if not (b.boxes[i].coordinates.q == action[1].q and b.boxes[i].coordinates.r == action[1].r and b.boxes[i].player == 0):
+                new_boxes.append(b.boxes[i])
+    new_boxes.append(Box(action[0].q, action[0].r, 0))
+    new_boxes.append(Box(action[1].q, action[1].q, player))
+    return Board(new_boxes, b.size)
+
+def strategy_brain(board: Board, player: Player) -> Action:
+    print("à vous de jouer: ", end="")
+    s = input()
+    print()
+    t = ast.literal_eval(s)
+    return t
+
+def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, debug: bool = False) -> Score:
