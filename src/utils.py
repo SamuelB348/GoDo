@@ -100,6 +100,7 @@ def start_board(size: int) -> Board:
 State = Board
 Strategy = Callable[[State, Player], Action]
 
+
 def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
     new_boxes: list[Box] = []
     for i in range(len(b.boxes)):
@@ -110,11 +111,31 @@ def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
     new_boxes.append(Box(action[1].q, action[1].q, player))
     return Board(new_boxes, b.size)
 
-def strategy_brain(board: Board, player: Player) -> Action:
+
+def strategy_brain(board: Board, player: Player) -> Action: #A faire correctement
     print("à vous de jouer: ", end="")
     s = input()
     print()
     t = ast.literal_eval(s)
     return t
 
+
 def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, debug: bool = False) -> Score:
+    taille_str = input("Taille :")
+    taille = int(taille_str)
+    b = start_board(taille)
+    b.pplot()
+    while not(b.final(1) and b.final(2)):
+        s = strategy_rouge(b, 1)
+        b = play(b, 1, s)
+        if b.final(2):
+            return -1
+        else:
+            b.pplot()
+            s = strategy_bleu(b, 2)
+            b = play(b, 2, s)
+            if b.final(1):
+                return 1
+
+
+
