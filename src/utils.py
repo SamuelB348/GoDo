@@ -1,6 +1,7 @@
 from hex_tools import *
 from typing import Callable
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 Player = int
 R = 1
@@ -124,6 +125,21 @@ def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
             new_boxes.append(box)
     new_boxes.append(Box(action[0].q, action[0].r, 0))
     new_boxes.append(Box(action[1].q, action[1].r, player))
+    return Board(new_boxes, b.size)
+
+
+def play2(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
+    # Create sets for the coordinates of the two actions
+    action_coords = [(action[0].q, action[0].r), (action[1].q, action[1].r)]
+
+    # Filter out boxes that match the conditions using set operations
+    new_boxes = [box for box in b.boxes if
+                 (box.coordinates.q, box.coordinates.r) not in action_coords]
+
+    # Add new boxes based on the action
+    new_boxes.append(Box(action[0].q, action[0].r, 0))
+    new_boxes.append(Box(action[1].q, action[1].r, player))
+
     return Board(new_boxes, b.size)
 
 
