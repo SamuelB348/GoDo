@@ -18,7 +18,7 @@ def test_play2():
 
 
 def test_dodo(n):
-    return dodo(strategy_random, strategy_random, n)
+    return dodo(strategy_brain, strategy_random, n)
 
 
 def main():

@@ -1,6 +1,7 @@
 from typing import Callable
 import random
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 from hex_tools import *
 
 
@@ -37,9 +38,7 @@ class Board:
         return legals
 
     def final(self, player: Player) -> bool:
-        if len(self.legals(player)) == 0:
-            return True
-        return False
+        return len(self.legals(player)) == 0
 
     def play(self, player: Player, action: Action):
         new_grid = self.grid.copy()
@@ -56,18 +55,67 @@ class Board:
             center = hex_to_pixel(layout, box)
 
             # Contours de chaque hexagone
-            list_edges_x = []
-            list_edges_y = []
-            for corner in corners:
-                list_edges_x.append(corner.x)
-                list_edges_y.append(corner.y)
+            list_edges_x = [corner.x for corner in corners]
+            list_edges_y = [corner.y for corner in corners]
             list_edges_x.append(list_edges_x[0])
             list_edges_y.append(list_edges_y[0])
             plt.plot(list_edges_x, list_edges_y, color="k")
+
             if self.grid[box] == 1:
                 plt.plot(center.x, center.y, marker="o", markersize=10, color="red")
             elif self.grid[box] == 2:
                 plt.plot(center.x, center.y, marker="o", markersize=10, color="blue")
+            plt.text(
+                center.x,
+                center.y,
+                f"{box.q}, {box.r}",
+                horizontalalignment="right",
+            )
+        plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
+        plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
+        plt.show()
+
+    def pplot2(self):
+        plt.figure(figsize=(10, 10))
+        layout = Layout(layout_flat, Point(1, -1), Point(0, 0))
+
+        for box, color in self.grid.items():
+            corners = polygon_corners(layout, box)
+            center = hex_to_pixel(layout, box)
+
+            # Contours de chaque hexagone
+            list_edges_x = [corner.x for corner in corners]
+            list_edges_y = [corner.y for corner in corners]
+            list_edges_x.append(list_edges_x[0])
+            list_edges_y.append(list_edges_y[0])
+            if color == 1:
+                polygon = Polygon(
+                    corners,
+                    closed=True,
+                    edgecolor="k",
+                    facecolor="red",
+                    alpha=0.8,
+                    linewidth=2,
+                )
+            elif color == 2:
+                polygon = Polygon(
+                    corners,
+                    closed=True,
+                    edgecolor="k",
+                    facecolor="blue",
+                    alpha=0.8,
+                    linewidth=2,
+                )
+            else:
+                polygon = Polygon(
+                    corners,
+                    closed=True,
+                    edgecolor="k",
+                    facecolor="none",
+                    alpha=0.8,
+                    linewidth=2,
+                )
+            plt.gca().add_patch(polygon)
             plt.text(
                 center.x,
                 center.y,
@@ -126,15 +174,15 @@ def strategy_random(board: Board, player: Player) -> Action:
 
 def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, size: int) -> Score:
     b = start_board(size)
-    b.pplot()
+    b.pplot2()
     while True:
         s = strategy_rouge(b, 1)
         b = b.play(1, s)
         if b.final(2):
-            b.pplot()
+            b.pplot2()
             return -1
         s = strategy_bleu(b, 2)
         b = b.play(2, s)
         if b.final(1):
-            b.pplot()
+            b.pplot2()
             return 1
