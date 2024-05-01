@@ -16,9 +16,9 @@ class Point:
 
 
 class Hex:
-    def __init__(self, q, r):
-        self.q = q
-        self.r = r
+    def __init__(self, q: int, r: int):
+        self.q: int = q
+        self.r: int = r
 
     def __add__(self, other):
         return Hex(self.q + other.q, self.r + other.r)

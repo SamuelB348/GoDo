@@ -10,7 +10,6 @@ Action = tuple[Hex, Hex]
 Score = float
 
 
-
 class Box:
     def __init__(self, q: int, r: int, p: Player):
         self.coordinates = Hex(q, r)
@@ -31,15 +30,24 @@ class Board:
     def legals(self, player: Player) -> list[tuple[Hex, Hex]]:
         legals: list[tuple[Hex, Hex]] = []
         for box in self.boxes:
-            # différencier le cas en fonction du joueur
-            if box.player == player:
-                for i in range(1, 4):
+            if box.player == player == 1:
+                for i in [1, 2, 3]:
                     if (
-                            box.coordinates.neighbor(i).to_tuple() in self.linkage_table
-                            and self.linkage_table[
-                        box.coordinates.neighbor(i).to_tuple()
-                    ].player
-                            == 0
+                        box.coordinates.neighbor(i).to_tuple() in self.linkage_table
+                        and self.linkage_table[
+                            box.coordinates.neighbor(i).to_tuple()
+                        ].player
+                        == 0
+                    ):
+                        legals.append((box.coordinates, box.coordinates.neighbor(i)))
+            elif box.player == player == 2:
+                for i in [0, 4, 5]:
+                    if (
+                        box.coordinates.neighbor(i).to_tuple() in self.linkage_table
+                        and self.linkage_table[
+                            box.coordinates.neighbor(i).to_tuple()
+                        ].player
+                        == 0
                     ):
                         legals.append((box.coordinates, box.coordinates.neighbor(i)))
         return legals
@@ -103,39 +111,50 @@ Strategy = Callable[[State, Player], Action]
 
 def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
     new_boxes: list[Box] = []
-    for i in range(len(b.boxes)):
-        if not (b.boxes[i].coordinates.q == action[0].q and b.boxes[i].coordinates.r == action[0].r and b.boxes[i].player == player):
-            if not (b.boxes[i].coordinates.q == action[1].q and b.boxes[i].coordinates.r == action[1].r and b.boxes[i].player == 0):
-                new_boxes.append(b.boxes[i])
+    for box in b.boxes:
+        if not (
+            box.coordinates.q == action[0].q
+            and box.coordinates.r == action[0].r
+            and box.player == player
+        ) and not (
+            box.coordinates.q == action[1].q
+            and box.coordinates.r == action[1].r
+            and box.player == 0
+        ):
+            new_boxes.append(box)
     new_boxes.append(Box(action[0].q, action[0].r, 0))
-    new_boxes.append(Box(action[1].q, action[1].q, player))
+    new_boxes.append(Box(action[1].q, action[1].r, player))
     return Board(new_boxes, b.size)
 
 
-def strategy_brain(board: Board, player: Player) -> Action: #A faire correctement
+def strategy_brain(board: Board, player: Player) -> Action:  # À faire correctement
     print("à vous de jouer: ", end="")
-    s = input()
-    print()
-    t = ast.literal_eval(s)
-    return t
+    # a faire plus tard
+    # s = input()
+    # print()
+    # t = ast.literal_eval(s)
+    start_q = int(input("start q :"))
+    start_r = int(input("start r :"))
+    end_q = int(input("end q :"))
+    end_r = int(input("end r :"))
+    # Ajouter check si l'action est dans les legals
+    return Hex(start_q, start_r), Hex(end_q, end_r)
 
 
-def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, debug: bool = False) -> Score:
-    taille_str = input("Taille :")
-    taille = int(taille_str)
-    b = start_board(taille)
+def dodo(
+    strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug: bool = False
+) -> Score:
+    b = start_board(size)
     b.pplot()
-    while not(b.final(1) and b.final(2)):
+    while not (b.final(1) or b.final(2)):
         s = strategy_rouge(b, 1)
         b = play(b, 1, s)
+        b.pplot()
         if b.final(2):
             return -1
         else:
-            b.pplot()
             s = strategy_bleu(b, 2)
             b = play(b, 2, s)
+            b.pplot()
             if b.final(1):
                 return 1
-
-
-
