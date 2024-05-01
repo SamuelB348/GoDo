@@ -1,6 +1,7 @@
 from hex_tools import *
 from typing import Callable
 import matplotlib.pyplot as plt
+import random
 
 Player = int
 R = 1
@@ -127,12 +128,8 @@ def play(b: Board, player: Player, action: tuple[Hex, Hex]) -> Board:
     return Board(new_boxes, b.size)
 
 
-def strategy_brain(board: Board, player: Player) -> Action:  # À faire correctement
+def strategy_brain(board: Board, player: Player) -> Action:
     print("à vous de jouer: ", end="")
-    # a faire plus tard
-    # s = input()
-    # print()
-    # t = ast.literal_eval(s)
     start_q = int(input("start q :"))
     start_r = int(input("start r :"))
     end_q = int(input("end q :"))
@@ -156,6 +153,11 @@ def strategy_brain(board: Board, player: Player) -> Action:  # À faire correcte
                 bool = True
 
     return Hex(start_q, start_r), Hex(end_q, end_r)
+
+
+def strategy_random(board: Board, player: Player) -> Action:
+    return random.choice(board.legals(player))
+
 
 
 def dodo(
