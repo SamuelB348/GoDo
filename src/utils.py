@@ -137,7 +137,24 @@ def strategy_brain(board: Board, player: Player) -> Action:  # À faire correcte
     start_r = int(input("start r :"))
     end_q = int(input("end q :"))
     end_r = int(input("end r :"))
-    # Ajouter check si l'action est dans les legals
+    depart = Hex(start_q, start_r)
+    arrive = Hex(end_q, end_r)
+    bool = False
+    for action in board.legals(player):
+        if action[0].q == depart.q and action[0].r == depart.r and action[1].q == arrive.q and action[1].r == arrive.r:
+            bool = True
+    
+    while not bool:
+        print("Coup illégal !")
+        start_q = int(input("start q :"))
+        start_r = int(input("start r :"))
+        end_q = int(input("end q :"))
+        end_r = int(input("end r :"))
+        bool = False
+        for action in board.legals(player):
+            if action[0].q == depart.q and action[0].r == depart.r and action[1].q == arrive.q and action[1].r == arrive.r:
+                bool = True
+
     return Hex(start_q, start_r), Hex(end_q, end_r)
 
 
