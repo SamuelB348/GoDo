@@ -1,48 +1,34 @@
-# Generated code -- CC0 -- No Rights Reserved -- http://www.redblobgames.com/grids/hexagons/
-
 from __future__ import division
 from __future__ import print_function
-import collections
+from collections import namedtuple
 import math
 
-
-class Point:
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
-
-    def __str__(self):
-        return f"({self.x}, {self.y})"
+Point = namedtuple('Point', ['x', 'y'])
+Hex = namedtuple('Hex', ['q', 'r'])
 
 
-class Hex:
-    def __init__(self, q, r):
-        self.q = q
-        self.r = r
+def point_to_str(p: Point) -> str:
+    return f"({p.x}, {p.y})"
 
-    def __add__(self, other):
-        return Hex(self.q + other.q, self.r + other.r)
 
-    def __sub__(self, other):
-        return Hex(self.q - other.q, self.r - other.r)
+def hex_add(h1: Hex, h2: Hex) -> Hex:
+    return Hex(h1.q + h2.q, h1.r + h2.r)
 
-    def scale(self, k):
-        return Hex(self.q * k, self.r * k)
 
-    def rotate_left(self):
-        return Hex(-self.q, -self.r)
+def hex_sub(h1: Hex, h2: Hex) -> Hex:
+    return Hex(h1.q - h2.q, h1.r - h2.r)
 
-    def rotate_right(self):
-        return Hex(-self.r, -self.q)
 
-    def neighbor(self, direction):
-        return self + hex_direction(direction)
+def scale(h: Hex, k) -> Hex:
+    return Hex(h.q * k, h.r * k)
 
-    def to_tuple(self):
-        return self.q, self.r
 
-    def __str__(self):
-        return f"(q: {self.q}, r: {self.r})"
+def rotate_left(h: Hex) -> Hex:
+    return Hex(-h.q, -h.r)
+
+
+def rotate_right(h: Hex) -> Hex:
+    return Hex(-h.r, -h.q)
 
 
 hex_directions = [
@@ -59,35 +45,16 @@ def hex_direction(direction) -> Hex:
     return hex_directions[direction]
 
 
-class Orientation:
-    def __init__(
-        self,
-        f0: float,
-        f1: float,
-        f2: float,
-        f3: float,
-        b0: float,
-        b1: float,
-        b2: float,
-        b3: float,
-        start_angle: float,
-    ):
-        self.f0 = f0
-        self.f1 = f1
-        self.f2 = f2
-        self.f3 = f3
-        self.b0 = b0
-        self.b1 = b1
-        self.b2 = b2
-        self.b3 = b3
-        self.start_angle = start_angle
+def neighbor(h: Hex, direction: int):
+    return hex_add(h, hex_direction(direction))
 
 
-class Layout:
-    def __init__(self, orientation: Orientation, size: Point, origin: Point):
-        self.orientation = orientation
-        self.size = size
-        self.origin = origin
+def hex_to_str(h: Hex) -> str:
+    return f"(q: {h.q}, r: {h.r})"
+
+
+Orientation = namedtuple("Orientation", ["f0", "f1", "f2", "f3", "b0", "b1", "b2", "b3", "start_angle"])
+Layout = namedtuple("Layout", ["orientation", "size", "origin"])
 
 
 layout_pointy = Orientation(
