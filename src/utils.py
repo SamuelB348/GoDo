@@ -172,17 +172,20 @@ def strategy_random(board: Board, player: Player) -> Action:
     return random.choice(board.legals(player))
 
 
+def strategy_first_legal(board: Board, player: Player) -> Action:
+    return board.legals(player)[0]
+
+
 def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, size: int) -> Score:
     b = start_board(size)
-    b.pplot2()
     while True:
         s = strategy_rouge(b, 1)
         b = b.play(1, s)
         if b.final(2):
-            b.pplot2()
+            # b.pplot2()
             return -1
         s = strategy_bleu(b, 2)
         b = b.play(2, s)
         if b.final(1):
-            b.pplot2()
+            # b.pplot2()
             return 1
