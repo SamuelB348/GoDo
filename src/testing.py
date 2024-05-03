@@ -33,6 +33,7 @@ def test_wins(strategy1: Strategy, strategy2: Strategy, grid_size: int, nb_games
     nb_wins = 0
     nb_losses = 0
     for i in range(nb_games):
+        print(f"Partie n° {i+1}")
         if i < nb_games // 2:
             a = dodo(strategy1, strategy2, grid_size)
             if a == 1:
@@ -55,7 +56,9 @@ def test_all_strategies(grid_size: int, nb_games: int):
     test_wins(strategy_random, strategy_random, grid_size, nb_games)
     test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
     test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
-
+    test_wins(strategy_alphabeta_random, strategy_random, grid_size, nb_games)
+    test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
+    test_wins(strategy_alphabeta_random, strategy_alphabeta_random, grid_size, nb_games)
     end = time.time()
     print(f"Runtime: {end - start:.2f} s")
 
