@@ -16,19 +16,22 @@ Score = float
 class Board:
     def __init__(self, grid: dict[Hex, Player], n: int):
         self.grid = grid
+        self.red_hex = [hex_key for hex_key, player in grid.items() if player == R]
+        self.blue_hex = [hex_key for hex_key, player in grid.items() if player == B]
         self.size = n
 
     def legals(self, player: Player) -> list[Action]:
         legals: list[Action] = []
-        for box in self.grid:
-            if self.grid[box] == player == 1:
+        if player == R:
+            for box in self.red_hex:
                 for i in [1, 2, 3]:
                     if (
                         neighbor(box, i) in self.grid
                         and self.grid[neighbor(box, i)] == 0
                     ):
                         legals.append((box, neighbor(box, i)))
-            elif self.grid[box] == player == 2:
+        elif player == B:
+            for box in self.blue_hex:
                 for i in [0, 4, 5]:
                     if (
                         neighbor(box, i) in self.grid
@@ -41,10 +44,20 @@ class Board:
         return len(self.legals(player)) == 0
 
     def play(self, player: Player, action: Action):
-        new_grid = self.grid.copy()
-        new_grid[action[0]] = 0
-        new_grid[action[1]] = player
-        return Board(new_grid, self.size)
+        self.grid[action[0]] = 0
+        self.grid[action[1]] = player
+        self.update_dicts(player, action)
+
+    def undo(self, player: Player, action: Action):
+        pass
+
+    def update_dicts(self, player: Player, action: Action):
+        if player == R:
+            self.red_hex.remove(action[0])
+            self.red_hex.append(action[1])
+        else:
+            self.blue_hex.remove(action[0])
+            self.blue_hex.append(action[1])
 
     def pplot(self):
         plt.figure(figsize=(10, 10))
@@ -180,12 +193,12 @@ def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, size: int) -> Score:
     b = start_board(size)
     while True:
         s = strategy_rouge(b, 1)
-        b = b.play(1, s)
+        b.play(1, s)
         if b.final(2):
             # b.pplot2()
             return -1
         s = strategy_bleu(b, 2)
-        b = b.play(2, s)
+        b.play(2, s)
         if b.final(1):
             # b.pplot2()
             return 1
