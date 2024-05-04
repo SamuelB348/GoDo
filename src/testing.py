@@ -1,5 +1,5 @@
 import time
-from utils import *
+from strategies import *
 
 
 def test_dodo(n):
@@ -53,12 +53,14 @@ def test_wins(strategy1: Strategy, strategy2: Strategy, grid_size: int, nb_games
 def test_all_strategies(grid_size: int, nb_games: int):
     start = time.time()
 
-    test_wins(strategy_random, strategy_random, grid_size, nb_games)
-    test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
-    test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
-    test_wins(strategy_alphabeta_random, strategy_random, grid_size, nb_games)
-    test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
+    # test_wins(strategy_random, strategy_random, grid_size, nb_games)
+    # test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
+    # test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
+    # test_wins(strategy_alphabeta_random, strategy_random, grid_size, nb_games)
+    # test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
+    #test_wins(strategy_minmax_random, strategy_minmax_random, grid_size, nb_games)
     test_wins(strategy_alphabeta_random, strategy_alphabeta_random, grid_size, nb_games)
+
     end = time.time()
     print(f"Runtime: {end - start:.2f} s")
 
