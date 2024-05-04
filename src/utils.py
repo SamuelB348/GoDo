@@ -1,8 +1,8 @@
-from typing import Callable
-import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+import random
 from hex_tools import *
+from typing import Iterator
 
 
 Player = int
@@ -20,7 +20,7 @@ class Board:
         self.blue_hex = {hex_key for hex_key, player in grid.items() if player == B}
         self.size = n
 
-    def legals(self, player: Player) -> list[Action]:
+    def legals(self, player: Player) -> Iterator[Action]:
         legals: list[Action] = []
         if player == R:
             for box in self.red_hex:
@@ -29,7 +29,7 @@ class Board:
                         neighbor(box, i) in self.grid
                         and self.grid[neighbor(box, i)] == 0
                     ):
-                        legals.append((box, neighbor(box, i)))
+                        yield box, neighbor(box, i)
         elif player == B:
             for box in self.blue_hex:
                 for i in [0, 4, 5]:
@@ -37,11 +37,11 @@ class Board:
                         neighbor(box, i) in self.grid
                         and self.grid[neighbor(box, i)] == 0
                     ):
-                        legals.append((box, neighbor(box, i)))
+                        yield box, neighbor(box, i)
         return legals
 
     def final(self, player: Player) -> bool:
-        return len(self.legals(player)) == 0
+        return len(list(self.legals(player))) == 0
 
     def play(self, player: Player, action: Action):
         self.grid[action[0]] = 0
@@ -70,8 +70,8 @@ class Board:
             self.blue_hex.add(action[0])
 
     def evaluate_v1(self, player: Player):
-        nb_moves_r: int = len(self.legals(R))
-        nb_moves_b: int = len(self.legals(B))
+        nb_moves_r: int = len(list(self.legals(R)))
+        nb_moves_b: int = len(list(self.legals(B)))
         if player == R and nb_moves_r == 0:
             return 10000
         if player == B and nb_moves_b == 0:

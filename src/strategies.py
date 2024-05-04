@@ -1,3 +1,5 @@
+from typing import Callable
+from copy import deepcopy
 from utils import *
 
 State = Board
@@ -56,11 +58,6 @@ def minmax_actions(grid: State, player: Player, depth: int) -> tuple[float, list
         return best_value, best_legals
 
 
-def strategy_minmax_random(grid: State, player: Player) -> Action:
-    list_moves: list[Action] = minmax_actions(grid, player, 5)[1]
-    return random.choice(list_moves)
-
-
 def alphabeta(grid: State, depth: int, a: float, b: float, player: Player) -> float:
     if depth == 0 or grid.final(player):
         return grid.evaluate_v1(player)
@@ -117,11 +114,48 @@ def alphabeta_actions(grid: State, player: Player, depth: int) -> tuple[float, l
         return best_value, best_legals
 
 
+def generate_random_games(board: State, player: Player, n: int):
+    count = 0
+    for i in range(n):
+        board_tmp: State = deepcopy(board)
+        current_player = player
+        while True:
+            s = strategy_random(board_tmp, current_player)
+            board_tmp.play(current_player, s)
+            if current_player == R:
+                current_player = B
+            else:
+                current_player = R
+
+            if current_player == B and board_tmp.final(B):  # blue wins
+                if player == B:
+                    count += 1
+                break
+            if current_player == R and board_tmp.final(R):  # red wins
+                if player == R:
+                    count += 1
+                break
+    return count
+
+
+def strategy_minmax_random(grid: State, player: Player) -> Action:
+    list_moves: list[Action] = minmax_actions(grid, player, 5)[1]
+    return random.choice(list_moves)
+
+
 def strategy_alphabeta_random(grid: State, player: Player) -> Action:
-    actions = alphabeta_actions(grid, player, 3)
+    actions = alphabeta_actions(grid, player, 4)
     list_moves: list[Action] = actions[1]
     # print(actions[0])
     return random.choice(list_moves)
+
+
+def strategy_random(board: Board, player: Player) -> Action:
+    return random.choice(list(board.legals(player)))
+
+
+def strategy_first_legal(board: Board, player: Player) -> Action:
+    return list(board.legals(player))[0]
 
 
 def strategy_brain(board: Board, player: Player) -> Action:
@@ -145,23 +179,17 @@ def strategy_brain(board: Board, player: Player) -> Action:
     return depart, arrive
 
 
-def strategy_random(board: Board, player: Player) -> Action:
-    return random.choice(board.legals(player))
-
-
-def strategy_first_legal(board: Board, player: Player) -> Action:
-    return board.legals(player)[0]
-
-
 def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, size: int) -> Score:
     b = start_board(size)
-    # b.pplot2()
+    b.pplot2()
     while True:
         s = strategy_rouge(b, 1)
         b.play(1, s)
+        b.pplot2()
         if b.final(2):
             return -1
         s = strategy_bleu(b, 2)
         b.play(2, s)
+        b.pplot2()
         if b.final(1):
             return 1
