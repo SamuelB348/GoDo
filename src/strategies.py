@@ -4,6 +4,7 @@ from utils import *
 
 State = Board
 Strategy = Callable[[State, Player], Action]
+COUNT_POSITION = 0
 
 
 def minmax(grid: State, depth: int, player: Player) -> float:
@@ -62,6 +63,8 @@ def minmax_actions(
 
 def alphabeta(grid: State, depth: int, a: float, b: float, player: Player) -> float:
     if depth == 0 or grid.final(player):
+        global COUNT_POSITION
+        COUNT_POSITION += 1
         return grid.evaluate_v1(player)
     if player == R:
         best_value = float("-inf")
@@ -86,7 +89,7 @@ def alphabeta(grid: State, depth: int, a: float, b: float, player: Player) -> fl
 
 
 def alphabeta_actions(
-    grid: State, player: Player, depth: int
+    grid: State, player: Player, depth: int, a: float, b: float
 ) -> tuple[float, list[Action]]:
     if depth == 0 or grid.final(player):
         return grid.evaluate_v1(player), []
@@ -95,26 +98,31 @@ def alphabeta_actions(
         best_legals: list[Action] = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = alphabeta(grid, depth - 1, float("-inf"), float("inf"), B)
+            v = alphabeta(grid, depth - 1, a, b, B)
             grid.undo(player, legal)
             if v > best_value:
                 best_value = v
                 best_legals = [legal]
             elif v == best_value:
                 best_legals.append(legal)
+            a = max(a, best_value)
+        global COUNT_POSITION
+        print(COUNT_POSITION)
+        COUNT_POSITION = 0
         return best_value, best_legals
     else:  # minimizing player
         best_value = float("inf")
         best_legals = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = alphabeta(grid, depth - 1, float("-inf"), float("inf"), R)
+            v = alphabeta(grid, depth - 1, a, b, R)
             grid.undo(player, legal)
             if v < best_value:
                 best_value = v
                 best_legals = [legal]
             elif v == best_value:
                 best_legals.append(legal)
+            b = min(b, best_value)
         return best_value, best_legals
 
 
@@ -148,7 +156,7 @@ def strategy_minmax_random(grid: State, player: Player) -> Action:
 
 
 def strategy_alphabeta_random(grid: State, player: Player) -> Action:
-    list_moves: list[Action] = alphabeta_actions(grid, player, 4)[1]
+    list_moves: list[Action] = alphabeta_actions(grid, player, 4, float('-inf'), float('inf'))[1]
     return random.choice(list_moves)
 
 
