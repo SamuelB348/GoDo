@@ -13,21 +13,23 @@ def minmax(grid: State, depth: int, player: Player) -> float:
         best_value = float("-inf")
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = minmax(grid, depth-1, B)
+            v = minmax(grid, depth - 1, B)
             grid.undo(player, legal)
             best_value = max(best_value, v)
         return best_value
-    else:  # minimizing player
+    else:
         best_value = float("inf")
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = minmax(grid, depth-1, R)
+            v = minmax(grid, depth - 1, R)
             grid.undo(player, legal)
             best_value = min(best_value, v)
         return best_value
 
 
-def minmax_actions(grid: State, player: Player, depth: int) -> tuple[float, list[Action]]:
+def minmax_actions(
+    grid: State, player: Player, depth: int
+) -> tuple[float, list[Action]]:
     if depth == 0 or grid.final(player):
         return grid.evaluate_v1(player), []
     if player == R:
@@ -35,7 +37,7 @@ def minmax_actions(grid: State, player: Player, depth: int) -> tuple[float, list
         best_legals: list[Action] = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = minmax(grid, depth-1, B)
+            v = minmax(grid, depth - 1, B)
             grid.undo(player, legal)
             if v > best_value:
                 best_value = v
@@ -48,7 +50,7 @@ def minmax_actions(grid: State, player: Player, depth: int) -> tuple[float, list
         best_legals = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = minmax(grid, depth-1, R)
+            v = minmax(grid, depth - 1, R)
             grid.undo(player, legal)
             if v < best_value:
                 best_value = v
@@ -62,20 +64,20 @@ def alphabeta(grid: State, depth: int, a: float, b: float, player: Player) -> fl
     if depth == 0 or grid.final(player):
         return grid.evaluate_v1(player)
     if player == R:
-        best_value = float('-inf')
+        best_value = float("-inf")
         for legal in grid.legals(player):
             grid.play(player, legal)
-            best_value = max(best_value, alphabeta(grid, depth-1, a, b, B))
+            best_value = max(best_value, alphabeta(grid, depth - 1, a, b, B))
             grid.undo(player, legal)
             a = max(a, best_value)
             if a >= b:
                 break  # β cut-off
         return best_value
-    else:  # minimizing player
-        best_value = float('inf')
+    else:
+        best_value = float("inf")
         for legal in grid.legals(player):
             grid.play(player, legal)
-            best_value = min(best_value, alphabeta(grid, depth-1, a, b, 2))
+            best_value = min(best_value, alphabeta(grid, depth - 1, a, b, R))
             grid.undo(player, legal)
             b = min(b, best_value)
             if a >= b:
@@ -83,15 +85,17 @@ def alphabeta(grid: State, depth: int, a: float, b: float, player: Player) -> fl
         return best_value
 
 
-def alphabeta_actions(grid: State, player: Player, depth: int) -> tuple[float, list[Action]]:
+def alphabeta_actions(
+    grid: State, player: Player, depth: int
+) -> tuple[float, list[Action]]:
     if depth == 0 or grid.final(player):
         return grid.evaluate_v1(player), []
     if player == R:
-        best_value = float('-inf')
+        best_value = float("-inf")
         best_legals: list[Action] = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = alphabeta(grid, depth-1, float('-inf'), float('inf'), B)
+            v = alphabeta(grid, depth - 1, float("-inf"), float("inf"), B)
             grid.undo(player, legal)
             if v > best_value:
                 best_value = v
@@ -100,11 +104,11 @@ def alphabeta_actions(grid: State, player: Player, depth: int) -> tuple[float, l
                 best_legals.append(legal)
         return best_value, best_legals
     else:  # minimizing player
-        best_value = float('inf')
+        best_value = float("inf")
         best_legals = []
         for legal in grid.legals(player):
             grid.play(player, legal)
-            v = alphabeta(grid, depth-1, float('-inf'), float('inf'), R)
+            v = alphabeta(grid, depth - 1, float("-inf"), float("inf"), R)
             grid.undo(player, legal)
             if v < best_value:
                 best_value = v
@@ -139,14 +143,12 @@ def generate_random_games(board: State, player: Player, n: int):
 
 
 def strategy_minmax_random(grid: State, player: Player) -> Action:
-    list_moves: list[Action] = minmax_actions(grid, player, 5)[1]
+    list_moves: list[Action] = minmax_actions(grid, player, 4)[1]
     return random.choice(list_moves)
 
 
 def strategy_alphabeta_random(grid: State, player: Player) -> Action:
-    actions = alphabeta_actions(grid, player, 4)
-    list_moves: list[Action] = actions[1]
-    # print(actions[0])
+    list_moves: list[Action] = alphabeta_actions(grid, player, 4)[1]
     return random.choice(list_moves)
 
 
@@ -179,17 +181,20 @@ def strategy_brain(board: Board, player: Player) -> Action:
     return depart, arrive
 
 
-def dodo(strategy_rouge: Strategy, strategy_bleu: Strategy, size: int) -> Score:
+def dodo(
+    strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
+) -> Score:
     b = start_board(size)
-    b.pplot2()
     while True:
         s = strategy_rouge(b, 1)
         b.play(1, s)
-        b.pplot2()
+        if debug:
+            b.pplot2()
         if b.final(2):
             return -1
         s = strategy_bleu(b, 2)
         b.play(2, s)
-        b.pplot2()
+        if debug:
+            b.pplot2()
         if b.final(1):
             return 1

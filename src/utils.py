@@ -1,8 +1,8 @@
+import random
+from typing import Iterator
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-import random
 from hex_tools import *
-from typing import Iterator
 
 
 Player = int
@@ -80,7 +80,7 @@ class Board:
             return -10000
         if player == B and nb_moves_r == 0:
             return 10000
-        return 1/nb_moves_r - 1/nb_moves_b
+        return 1 / nb_moves_r - 1 / nb_moves_b
 
     def pplot(self):
         plt.figure(figsize=(10, 10))
