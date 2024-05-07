@@ -2,8 +2,37 @@ import time
 from strategies import *
 
 
-def test_dodo(n):
-    return dodo(strategy_brain, strategy_random, n)
+def new_state(grid: State, action: Action, player: Player) -> State:
+    for i in range(len(grid)):
+        if grid[i][0] == action[0]:
+            grid[i] = (grid[i][0], 0)
+        if grid[i][0] == action[1]:
+            grid[i] = (grid[i][0], player)
+    return grid
+
+
+def dodo(
+    strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
+) -> Score:
+    state_tmp = start_board(size)
+    time_left = 100
+    b: Engine = initialize("dodo", state_tmp, R, size-1, time_left)
+    b.pplot()
+    while True:
+        s = strategy_rouge(b, state_tmp, R, time_left)
+        new_state(state_tmp, s[1], R)
+        b.play(R, s[1])
+        if debug:
+            b.pplot()
+        if b.is_final(B):
+            return -1
+        s = strategy_bleu(b, state_tmp, B, time_left)
+        new_state(state_tmp, s[1], B)
+        b.play(B, s[1])
+        if debug:
+            b.pplot()
+        if b.is_final(R):
+            return 1
 
 
 def print_percentage_bar(percentage1, percentage2, sample_size):
@@ -56,7 +85,7 @@ def test_all_strategies(grid_size: int, nb_games: int):
     # test_wins(strategy_random, strategy_random, grid_size, nb_games)
     # test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
-    test_wins(strategy_alphabeta_random, strategy_random, grid_size, nb_games)
+    test_wins(strategy_alphabeta, strategy_random, grid_size, nb_games)
     #test_wins(strategy_minmax_random, strategy_random, grid_size, nb_games)
     # test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_minmax_random, strategy_minmax_random, grid_size, nb_games)
