@@ -3,8 +3,8 @@ from __future__ import print_function
 from collections import namedtuple
 import math
 
-Point = namedtuple('Point', ['x', 'y'])
-Cell = namedtuple('Cell', ['q', 'r'])
+Point = namedtuple("Point", ["x", "y"])
+Cell = namedtuple("Cell", ["q", "r"])
 
 
 def point_to_str(p: Point) -> str:
@@ -45,7 +45,9 @@ def neighbor(h: Cell, direction: int):
     return hex_add(h, hex_direction(direction))
 
 
-Orientation = namedtuple("Orientation", ["f0", "f1", "f2", "f3", "b0", "b1", "b2", "b3", "start_angle"])
+Orientation = namedtuple(
+    "Orientation", ["f0", "f1", "f2", "f3", "b0", "b1", "b2", "b3", "start_angle"]
+)
 Layout = namedtuple("Layout", ["orientation", "size", "origin"])
 
 

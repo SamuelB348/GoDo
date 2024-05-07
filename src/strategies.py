@@ -1,5 +1,5 @@
+import random
 from typing import Callable
-from copy import deepcopy
 import ast
 from engine import *
 
@@ -15,7 +15,9 @@ def strategy(
     """
 
     env.reset_dicts(state)
-    list_moves: list[Action] = env.alphabeta_actions(player, 5, float("-inf"), float("inf"))[1]
+    list_moves: list[Action] = env.alphabeta_actions(
+        player, 5, float("-inf"), float("inf")
+    )[1]
     return env, random.choice(list_moves)
 
 
@@ -24,7 +26,9 @@ def strategy(
 ##################################################
 
 
-def strategy_brain(env: Environment, state: State, player: Player, time_left: Time) -> tuple[Environment, Action]:
+def strategy_brain(
+    env: Environment, state: State, player: Player, time_left: Time
+) -> tuple[Environment, Action]:
     env.reset_dicts(state)
 
     print("à vous de jouer: ", end="")
@@ -47,17 +51,23 @@ def strategy_brain(env: Environment, state: State, player: Player, time_left: Ti
     return env, (src_cell, dest_cell)
 
 
-def strategy_random(env: Environment, state: State, player: Player, time_left: Time) -> tuple[Environment, Action]:
+def strategy_random(
+    env: Environment, state: State, player: Player, time_left: Time
+) -> tuple[Environment, Action]:
     env.reset_dicts(state)
     return env, random.choice(list(env.legals(player)))
 
 
-def strategy_first_legal(env: Environment, state: State, player: Player, time_left: Time) -> tuple[Environment, Action]:
+def strategy_first_legal(
+    env: Environment, state: State, player: Player, time_left: Time
+) -> tuple[Environment, Action]:
     env.reset_dicts(state)
     return env, list(env.legals(player))[0]
 
 
-def strategy_minmax(env: Environment, state: State, player: Player, time_left: Time) -> tuple[Environment, Action]:
+def strategy_minmax(
+    env: Environment, state: State, player: Player, time_left: Time
+) -> tuple[Environment, Action]:
     env.reset_dicts(state)
     list_moves: list[Action] = env.minmax_actions(player, 5)[1]
     return env, random.choice(list_moves)
@@ -67,5 +77,7 @@ def strategy_alphabeta(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
     env.reset_dicts(state)
-    list_moves: list[Action] = env.alphabeta_actions(player, 5, float("-inf"), float("inf"))[1]
+    list_moves: list[Action] = env.alphabeta_actions(
+        player, 5, float("-inf"), float("inf")
+    )[1]
     return env, random.choice(list_moves)

@@ -3,11 +3,11 @@ from strategies import *
 
 
 def new_state(grid: State, action: Action, player: Player) -> State:
-    for i in range(len(grid)):
-        if grid[i][0] == action[0]:
-            grid[i] = (grid[i][0], 0)
-        if grid[i][0] == action[1]:
-            grid[i] = (grid[i][0], player)
+    for count, box in enumerate(grid):
+        if box[0] == action[0]:
+            grid[count] = (box[0], 0)
+        if box[0] == action[1]:
+            grid[count] = (box[0], player)
     return grid
 
 
@@ -16,7 +16,7 @@ def dodo(
 ) -> Score:
     state_tmp = start_board(size)
     time_left = 100
-    b: Engine = initialize("dodo", state_tmp, R, size-1, time_left)
+    b: Engine = initialize("dodo", state_tmp, R, size - 1, time_left)
     b.pplot()
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
@@ -86,7 +86,7 @@ def test_all_strategies(grid_size: int, nb_games: int):
     # test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
     test_wins(strategy_alphabeta, strategy_random, grid_size, nb_games)
-    #test_wins(strategy_minmax_random, strategy_random, grid_size, nb_games)
+    # test_wins(strategy_minmax_random, strategy_random, grid_size, nb_games)
     # test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_minmax_random, strategy_minmax_random, grid_size, nb_games)
     # test_wins(strategy_alphabeta_random, strategy_alphabeta_random, grid_size, nb_games)
