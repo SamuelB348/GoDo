@@ -1,4 +1,5 @@
-from typing import Iterator, Union
+from typing import Iterator, Union, Callable
+from math import exp
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from hex_tools import *
@@ -17,29 +18,29 @@ Time = int
 
 
 class Engine:
-    COUNT_POSITION = 0
-
     def __init__(self, grid: State, hex_size: int, time: Time):
         self.grid: dict[Cell, Player] = dict(grid)
-        self.red_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.blue_hex = {
-            hex_key for hex_key, player in self.grid.items() if player == B
-        }
+        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
+        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
         self.size = hex_size
         self.time = time
 
-    def reset_dicts(self, grid: State):
+        # Attributs pour la fonction d'évaluation
+        self.grid_weights_R = None
+        self.grid_weights_B = None
+        # Attributs pour le debug
+        self.position_explored = 0
+
+    def update_state(self, grid: State):
         """
         Remet à jour les dictionnaires quand on reçoit un nouveau "state" de l'arbitre
         """
 
         self.grid: dict[Cell, Player] = dict(grid)
-        self.red_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.blue_hex = {
-            hex_key for hex_key, player in self.grid.items() if player == B
-        }
+        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
+        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
 
-    def legals(self, player: Player) -> Iterator[Action]:
+    def legals(self, player: Player) -> list[Action]:
         """
         Retourne les coups légaux du joueur en paramètre
 
@@ -47,25 +48,27 @@ class Engine:
         toutes les cases du plateau.
         """
 
+        legals: list[Action] = []
         if player == R:
-            for box in self.red_hex:
+            for box in self.R_hex:
                 for i in [1, 2, 3]:
                     if (
-                        neighbor(box, i) in self.grid
+                        neighbor(box, i) in self.grid.keys()
                         and self.grid[neighbor(box, i)] == 0
                     ):
-                        yield box, neighbor(box, i)
+                        legals.append((box, neighbor(box, i)))
         elif player == B:
-            for box in self.blue_hex:
+            for box in self.B_hex:
                 for i in [0, 4, 5]:
                     if (
                         neighbor(box, i) in self.grid
                         and self.grid[neighbor(box, i)] == 0
                     ):
-                        yield box, neighbor(box, i)
+                        legals.append((box, neighbor(box, i)))
+        return legals
 
     def is_final(self, player: Player) -> bool:
-        return len(list(self.legals(player))) == 0
+        return len(self.legals(player)) == 0
 
     def play(self, player: Player, action: Action):
         """
@@ -94,11 +97,11 @@ class Engine:
         """
 
         if player == R:
-            self.red_hex.discard(action[0])
-            self.red_hex.add(action[1])
+            self.R_hex.discard(action[0])
+            self.R_hex.add(action[1])
         else:
-            self.blue_hex.discard(action[0])
-            self.blue_hex.add(action[1])
+            self.B_hex.discard(action[0])
+            self.B_hex.add(action[1])
 
     def reverse_update_sets(self, player: Player, action: Action):
         """
@@ -106,19 +109,19 @@ class Engine:
         """
 
         if player == R:
-            self.red_hex.discard(action[1])
-            self.red_hex.add(action[0])
+            self.R_hex.discard(action[1])
+            self.R_hex.add(action[0])
         else:
-            self.blue_hex.remove(action[1])
-            self.blue_hex.add(action[0])
+            self.B_hex.remove(action[1])
+            self.B_hex.add(action[0])
 
     def evaluate_v1(self, player: Player) -> Evaluation:
         """
         Fonction d'évaluation de l'état courant du jeu dans lequel est self.
         """
 
-        nb_moves_r: int = len(list(self.legals(R)))
-        nb_moves_b: int = len(list(self.legals(B)))
+        nb_moves_r: int = len(self.legals(R))
+        nb_moves_b: int = len(self.legals(B))
         if player == R and nb_moves_r == 0:
             return 10000
         if player == B and nb_moves_b == 0:
@@ -129,66 +132,29 @@ class Engine:
             return 10000
         return 1 / nb_moves_r - 1 / nb_moves_b
 
-    def minmax(self, depth: int, player: Player) -> float:
-        """
-        Minmax pour une profondeur limitée
-        """
+    def evaluate_v2(self, player: Player) -> Evaluation:
+        nb_moves_r: int = len(self.legals(R))
+        nb_moves_b: int = len(self.legals(B))
+        if player == R and nb_moves_r == 0:
+            return 10000
+        if player == B and nb_moves_b == 0:
+            return -10000
+        if player == R and nb_moves_b == 0:
+            return -10000
+        if player == B and nb_moves_r == 0:
+            return 10000
+        mobility = 1 / nb_moves_r - 1 / nb_moves_b
+        position = 0
+        for box in self.R_hex:
+            position += self.grid_weights_R[box]
+        for box in self.B_hex:
+            position -= self.grid_weights_B[box]
+        return 20*mobility + 5*position
 
-        if depth == 0 or self.is_final(player):
-            return self.evaluate_v1(player)
-        if player == R:
-            best_value = float("-inf")
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.minmax(depth - 1, B)
-                self.undo(player, legal)
-                best_value = max(best_value, v)
-            return best_value
-        else:
-            best_value = float("inf")
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.minmax(depth - 1, R)
-                self.undo(player, legal)
-                best_value = min(best_value, v)
-            return best_value
-
-    def minmax_actions(self, player: Player, depth: int) -> tuple[float, list[Action]]:
-        """
-        Minmax avec choix d'une action.
-
-        La méthode s'appuie sur la méthode minmax : pour chaque coup à une profondeur de 1, elle appelle la méthode
-        minmax. Elle renvoie ensuite un tuple avec le score optimal et la (les) action(s) pouvant y mener.
-        """
-
-        if depth == 0 or self.is_final(player):
-            return self.evaluate_v1(player), []
-        if player == R:
-            best_value = float("-inf")
-            best_legals: list[Action] = []
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.minmax(depth - 1, B)
-                self.undo(player, legal)
-                if v > best_value:
-                    best_value = v
-                    best_legals = [legal]
-                elif v == best_value:
-                    best_legals.append(legal)
-            return best_value, best_legals
-        else:  # minimizing player
-            best_value = float("inf")
-            best_legals = []
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.minmax(depth - 1, R)
-                self.undo(player, legal)
-                if v < best_value:
-                    best_value = v
-                    best_legals = [legal]
-                elif v == best_value:
-                    best_legals.append(legal)
-            return best_value, best_legals
+    @staticmethod
+    def adaptable_depth(x: int, upper_bound: int, lower_bound: int, critical_point: int) -> int:
+        d = upper_bound - ((upper_bound - lower_bound) / (1 + exp(-(x-critical_point))))
+        return round(d)
 
     def alphabeta(self, depth: int, a: float, b: float, player: Player) -> float:
         """
@@ -196,10 +162,10 @@ class Engine:
         """
 
         if depth == 0 or self.is_final(player):
-            Engine.COUNT_POSITION += 1
             return self.evaluate_v1(player)
         if player == R:
             best_value = float("-inf")
+
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = max(best_value, self.alphabeta(depth - 1, a, b, B))
@@ -207,9 +173,11 @@ class Engine:
                 a = max(a, best_value)
                 if a >= b:
                     break  # β cut-off
+
             return best_value
         else:
             best_value = float("inf")
+
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = min(best_value, self.alphabeta(depth - 1, a, b, R))
@@ -217,6 +185,7 @@ class Engine:
                 b = min(b, best_value)
                 if a >= b:
                     break  # α cut-off
+
             return best_value
 
     def alphabeta_actions(
@@ -231,6 +200,7 @@ class Engine:
         if player == R:
             best_value = float("-inf")
             best_legals: list[Action] = []
+
             for legal in self.legals(player):
                 self.play(player, legal)
                 v = self.alphabeta(depth - 1, a, b, B)
@@ -241,12 +211,12 @@ class Engine:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-            print(Engine.COUNT_POSITION)
-            Engine.COUNT_POSITION = 0
+
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
+
             for legal in self.legals(player):
                 self.play(player, legal)
                 v = self.alphabeta(depth - 1, a, b, R)
@@ -257,6 +227,81 @@ class Engine:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
+
+            return best_value, best_legals
+
+    def alphabeta_v2(self, depth: int, a: float, b: float, player: Player) -> float:
+        """
+        Minmax avec élagage alpha-beta.
+        """
+
+        if depth == 0 or self.is_final(player):
+            return self.evaluate_v2(player)
+        if player == R:
+            best_value = float("-inf")
+
+            for legal in self.legals(player):
+                self.play(player, legal)
+                best_value = max(best_value, self.alphabeta_v2(depth - 1, a, b, B))
+                self.undo(player, legal)
+                a = max(a, best_value)
+                if a >= b:
+                    break  # β cut-off
+
+            return best_value
+        else:
+            best_value = float("inf")
+
+            for legal in self.legals(player):
+                self.play(player, legal)
+                best_value = min(best_value, self.alphabeta_v2(depth - 1, a, b, R))
+                self.undo(player, legal)
+                b = min(b, best_value)
+                if a >= b:
+                    break  # α cut-off
+
+            return best_value
+
+    def alphabeta_actions_v2(
+        self, player: Player, depth: int, a: float, b: float
+    ) -> tuple[float, list[Action]]:
+        """
+        Minmax avec élagage alpha-beta et choix d'une action.
+        """
+
+        if depth == 0 or self.is_final(player):
+            return self.evaluate_v2(player), []
+        if player == R:
+            best_value = float("-inf")
+            best_legals: list[Action] = []
+
+            for legal in self.legals(player):
+                self.play(player, legal)
+                v = self.alphabeta_v2(depth - 1, a, b, B)
+                self.undo(player, legal)
+                if v > best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                a = max(a, best_value)
+
+            return best_value, best_legals
+        else:  # minimizing player
+            best_value = float("inf")
+            best_legals = []
+
+            for legal in self.legals(player):
+                self.play(player, legal)
+                v = self.alphabeta_v2(depth - 1, a, b, R)
+                self.undo(player, legal)
+                if v < best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                b = min(b, best_value)
+
             return best_value, best_legals
 
     def pplot(self):
@@ -332,15 +377,6 @@ def start_board(size: int) -> State:
             else:
                 grid.append((Cell(q, r), 0))
     return grid
-
-
-def initialize(
-    game: str, state: State, player: Player, hex_size: int, total_time: Time
-) -> Environment:
-    if game.lower() == "dodo":
-        return Engine(state, hex_size, total_time)
-    else:
-        return Engine(state, hex_size, total_time)
 
 
 def final_result(state: State, score: Score, player: Player):

@@ -2,22 +2,12 @@ import time
 from strategies import *
 
 
-def new_state(grid: State, action: Action, player: Player) -> State:
-    for count, box in enumerate(grid):
-        if box[0] == action[0]:
-            grid[count] = (box[0], 0)
-        if box[0] == action[1]:
-            grid[count] = (box[0], player)
-    return grid
-
-
 def dodo(
     strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
 ) -> Score:
     state_tmp = start_board(size)
     time_left = 100
-    b: Engine = initialize("dodo", state_tmp, R, size - 1, time_left)
-    b.pplot()
+    b: Engine = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
         new_state(state_tmp, s[1], R)
@@ -85,11 +75,15 @@ def test_all_strategies(grid_size: int, nb_games: int):
     # test_wins(strategy_random, strategy_random, grid_size, nb_games)
     # test_wins(strategy_first_legal, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_first_legal, strategy_random, grid_size, nb_games)
-    test_wins(strategy_alphabeta, strategy_random, grid_size, nb_games)
+    # test_wins(strategy_alphabeta, strategy_random, grid_size, nb_games)
     # test_wins(strategy_minmax_random, strategy_random, grid_size, nb_games)
     # test_wins(strategy_alphabeta_random, strategy_first_legal, grid_size, nb_games)
     # test_wins(strategy_minmax_random, strategy_minmax_random, grid_size, nb_games)
     # test_wins(strategy_alphabeta_random, strategy_alphabeta_random, grid_size, nb_games)
-
+    test_wins(strategy_alphabeta_adapt_depth_8_2_7, strategy_random, grid_size, nb_games)
+    test_wins(strategy_alphabeta_adapt_depth_8_2_7, strategy_alphabeta, grid_size, nb_games)
+    test_wins(strategy_alphabeta_v2, strategy_random, grid_size, nb_games)
+    test_wins(strategy_alphabeta_v2, strategy_alphabeta, grid_size, nb_games)
+    test_wins(strategy_alphabeta_v2, strategy_alphabeta_adapt_depth_8_2_7, grid_size, nb_games)
     end = time.time()
     print(f"Runtime: {end - start:.2f} s")
