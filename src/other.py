@@ -83,47 +83,6 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 
 
-def grid_heatmap_plot(heatmap: dict[Cell, float], hex_size: int):
-    plt.figure(figsize=(10, 10))
-    layout = Layout(layout_flat, Point(1, -1), Point(0, 0))
 
-    min_count = min(heatmap.values())
-    max_count = max(heatmap.values())
-
-    norm = Normalize(vmin=min_count, vmax=max_count)
-    cmap = plt.get_cmap('viridis')
-    scalar_map = ScalarMappable(norm=norm, cmap=cmap)
-
-    for box, count in heatmap.items():
-        corners = polygon_corners(layout, box)
-        center = hex_to_pixel(layout, box)
-
-        # Contours de chaque hexagone
-        list_edges_x = [corner.x for corner in corners]
-        list_edges_y = [corner.y for corner in corners]
-        list_edges_x.append(list_edges_x[0])
-        list_edges_y.append(list_edges_y[0])
-
-        color = scalar_map.to_rgba(count)
-
-        polygon = Polygon(
-            corners,
-            closed=True,
-            edgecolor="k",
-            facecolor=color,
-            alpha=0.8,
-            linewidth=2,
-        )
-
-        plt.gca().add_patch(polygon)
-        plt.text(
-            center.x,
-            center.y,
-            f"{count:.2f}",
-            horizontalalignment="right",
-        )
-    plt.xlim(-2 * hex_size-1, 2 * hex_size+1)
-    plt.ylim(-2 * hex_size-1, 2 * hex_size+1)
-    plt.show()
 
 

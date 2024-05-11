@@ -3,26 +3,32 @@ from typing import Callable
 import ast
 from engine import *
 
-
+Environment = Engine
 Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, Action]]
 
 
-def strategy(
-    env: Environment, state: State, player: Player, time_left: Time
-) -> tuple[Environment, Action]:
-    """
-    Meilleure stratégie pour le moment (ici alphabeta avec eval_v1)
-    """
+def start_board(size: int) -> State:
+    grid: State = []
+    n = size - 1
+    for r in range(n, -n - 1, -1):
+        q1 = max(-n, r - n)
+        q2 = min(n, r + n)
+        for q in range(q1, q2 + 1):
+            if -q > r + (size - 3):
+                grid.append((Cell(q, r), R))
+            elif r > -q + (size - 3):
+                grid.append((Cell(q, r), B))
+            else:
+                grid.append((Cell(q, r), 0))
+    return grid
 
-    env.update_state(state)
-    list_moves: list[Action] = env.alphabeta_actions(
-        player, 5, float("-inf"), float("inf")
-    )[1]
-    return env, random.choice(list_moves)
+
+def final_result(state: State, score: Score, player: Player):
+    pass
 
 
 ##################################################
-# Autres stratégies
+# Différentes stratégies
 ##################################################
 
 
@@ -55,57 +61,34 @@ def strategy_random(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
     env.update_state(state)
-    return env, random.choice(list(env.legals(player)))
+    return env, random.choice(env.legals(player))
 
 
-def strategy_first_legal(
-    env: Environment, state: State, player: Player, time_left: Time
+def generic_strategy(
+    env: Environment,
+    state: State,
+    player: Player,
+    time_left: Time,
+    m: float,
+    p: float,
+    c: float,
 ) -> tuple[Environment, Action]:
+
     env.update_state(state)
-    return env, list(env.legals(player))[0]
-
-
-def strategy_alphabeta(
-    env: Environment, state: State, player: Player, time_left: Time
-) -> tuple[Environment, Action]:
-    env.update_state(state)
-    list_moves: list[Action] = env.alphabeta_actions(
-        player, 5, float("-inf"), float("inf")
-    )[1]
-    return env, random.choice(list_moves)
-
-
-def strategy_alphabeta_adapt_depth_8_2_7(
-    env: Environment, state: State, player: Player, time_left: Time
-) -> tuple[Environment, Action]:
-    env.update_state(state)
-    depth = env.adaptable_depth(len(env.legals(player)), 8, 2, 7)
-    list_moves: list[Action] = env.alphabeta_actions(
-        player, depth, float("-inf"), float("inf")
-    )[1]
-    return env, random.choice(list_moves)
-
-
-def strategy_alphabeta_adapt_depth_9_2_6(
-    env: Environment, state: State, player: Player, time_left: Time
-) -> tuple[Environment, Action]:
-    env.update_state(state)
-    depth = env.adaptable_depth(len(env.legals(player)), 9, 2, 6)
-    print(depth)
-    list_moves: list[Action] = env.alphabeta_actions(
-        player, depth, float("-inf"), float("inf")
-    )[1]
-    return env, random.choice(list_moves)
-
-
-def strategy_alphabeta_v2(
-    env: Environment, state: State, player: Player, time_left: Time
-) -> tuple[Environment, Action]:
-    env.update_state(state)
-    depth = env.adaptable_depth(len(env.legals(player)), 8, 2, 7)
-    print(depth)
-    list_moves: list[Action] = env.alphabeta_actions_v2(
-        player, depth, float("-inf"), float("inf")
+    legals = env.legals(player)
+    if len(legals) == 1:
+        return env, legals[0]
+    # depth = env.adaptable_depth_bestv(len(legals), 8, 2, 7)
+    depth = 3
+    list_moves: list[Action] = env.alphabeta_actions_test(
+        player,
+        depth,
+        float("-inf"),
+        float("inf"),
+        legals,
+        m,
+        p,
+        c,
     )[1]
     return env, random.choice(list_moves)
 
@@ -132,7 +115,7 @@ def add_dicts(dict1, dict2, player: Player):
 
 def grid_heatmap(nb_games: int, board_size: int, player: Player):
     count_dict: dict[Cell, float] = dict(start_board(board_size))
-    for el in count_dict.keys():
+    for el in count_dict:
         count_dict[el] = 0
 
     victory_count: int = 0
@@ -157,7 +140,7 @@ def grid_heatmap(nb_games: int, board_size: int, player: Player):
                     add_dicts(count_dict, dict(state_tmp), R)
                 break
 
-    for el in count_dict.keys():
+    for el in count_dict:
         count_dict[el] /= victory_count
     return count_dict
 
@@ -167,8 +150,12 @@ def initialize(
 ) -> Environment:
     if game.lower() == "dodo":
         env = Engine(state, hex_size, total_time)
-        env.grid_weights_R = grid_heatmap((3*hex_size**2-3*hex_size+1)*10, hex_size, R)
-        env.grid_weights_B = grid_heatmap((3*hex_size**2-3*hex_size+1)*10, hex_size, B)
+        env.grid_weights_R = grid_heatmap(
+            (3 * hex_size**2 - 3 * hex_size + 1) * 10, hex_size, R
+        )
+        env.grid_weights_B = grid_heatmap(
+            (3 * hex_size**2 - 3 * hex_size + 1) * 10, hex_size, B
+        )
         return env
     else:
         return Engine(state, hex_size, total_time)

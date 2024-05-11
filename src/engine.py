@@ -1,8 +1,16 @@
-from typing import Iterator, Union, Callable
-from math import exp
+from typing import Union, Optional
+from math import exp, log
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from hex_tools import *
+from hex_tools import (
+    Cell,
+    Point,
+    neighbor,
+    Layout,
+    layout_flat,
+    hex_to_pixel,
+    polygon_corners,
+)
 
 
 ActionGopher = Cell
@@ -26,8 +34,9 @@ class Engine:
         self.time = time
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R = None
-        self.grid_weights_B = None
+        self.grid_weights_R: Optional[dict[Cell, float]] = None
+        self.grid_weights_B: Optional[dict[Cell, float]] = None
+
         # Attributs pour le debug
         self.position_explored = 0
 
@@ -115,60 +124,112 @@ class Engine:
             self.B_hex.remove(action[1])
             self.B_hex.add(action[0])
 
-    def evaluate_v1(self, player: Player) -> Evaluation:
+    def neighbors(self, cell: Cell, player: Player) -> dict[Cell, Player]:
+        neighbors: dict[Cell, Player] = {}
+        if player == R:
+            for i in [1, 2, 3]:
+                if neighbor(cell, i) in self.grid:
+                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+        if player == B:
+            for i in [0, 4, 5]:
+                if neighbor(cell, i) in self.grid:
+                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+        return neighbors
+
+    def nb_pins(self, player: Player) -> int:
         """
-        Fonction d'évaluation de l'état courant du jeu dans lequel est self.
+        Retourne le nombre de fois où player est bloqué c.-à-d. qu'il ne peut pas bouger,
+        sauf si un jeton voisin appartenant au joueur adverse bouge
         """
 
+        count: int = 0
+        opponent = R if player == B else B
+        for box in (self.R_hex if player == R else self.B_hex):
+            neighbors = self.neighbors(box, player)
+            if all(
+                neighbors.values()
+            ):  # Si toutes les cases voisines sont occupées (c.-à-d. != 0)
+                for el in neighbors.keys():
+                    if neighbors[el] == opponent and 0 in self.neighbors(el, opponent).values():
+                        count += 1
+        return count
+
+    def evaluate_test(
+        self, player: Player, m: float = 0, p: float = 0, c: float = 0
+    ) -> Evaluation:
         nb_moves_r: int = len(self.legals(R))
         nb_moves_b: int = len(self.legals(B))
+        # Si un des deux joueurs gagne
         if player == R and nb_moves_r == 0:
             return 10000
         if player == B and nb_moves_b == 0:
             return -10000
-        if player == R and nb_moves_b == 0:
-            return -10000
-        if player == B and nb_moves_r == 0:
-            return 10000
-        return 1 / nb_moves_r - 1 / nb_moves_b
 
-    def evaluate_v2(self, player: Player) -> Evaluation:
-        nb_moves_r: int = len(self.legals(R))
-        nb_moves_b: int = len(self.legals(B))
-        if player == R and nb_moves_r == 0:
-            return 10000
-        if player == B and nb_moves_b == 0:
+        # Si un des deux joueurs gagne au prochain coup de manière certaine
+        pins_r: int = self.nb_pins(R)
+        pins_b: int = self.nb_pins(B)
+        if player == R and nb_moves_b == 0 and pins_r == 0:
             return -10000
-        if player == R and nb_moves_b == 0:
-            return -10000
-        if player == B and nb_moves_r == 0:
+        if player == B and nb_moves_r == 0 and pins_b == 0:
             return 10000
-        mobility = 1 / nb_moves_r - 1 / nb_moves_b
-        position = 0
-        for box in self.R_hex:
-            position += self.grid_weights_R[box]
-        for box in self.B_hex:
-            position -= self.grid_weights_B[box]
-        return 20*mobility + 5*position
+
+        # facteur mobilité
+        mobility = 1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
+
+        # facteur position
+        assert self.grid_weights_R is not None and self.grid_weights_B is not None
+        position_r = sum(self.grid_weights_R[box] for box in self.R_hex)
+        position_b = sum(self.grid_weights_B[box] for box in self.B_hex)
+        position: float = (position_r - position_b) / 13
+
+        # facteur contrôle
+        control = pins_r - pins_b
+
+        # combinaison linéaire des différents facteurs
+        return m * mobility + p * position + c * control
 
     @staticmethod
-    def adaptable_depth(x: int, upper_bound: int, lower_bound: int, critical_point: int) -> int:
-        d = upper_bound - ((upper_bound - lower_bound) / (1 + exp(-(x-critical_point))))
+    def adaptable_depth_bestv(
+        x: int, upper_bound: int, lower_bound: int, critical_point: int
+    ) -> int:
+        d = upper_bound - (
+            (upper_bound - lower_bound) / (1 + exp(-(x - critical_point)))
+        )
         return round(d)
 
-    def alphabeta(self, depth: int, a: float, b: float, player: Player) -> float:
+    @staticmethod
+    def adaptable_depth_v2(
+        x: int, upper_bound: int, lower_bound: int, critical_point: int
+    ):
+        d = upper_bound - (
+            (upper_bound - lower_bound) / (1 + exp(-0.7 * (x - critical_point)))
+        )
+        return round(d)
+
+    def alphabeta_test(
+        self,
+        depth: int,
+        a: float,
+        b: float,
+        player: Player,
+        m: float,
+        p: float,
+        c: float,
+    ) -> float:
         """
         Minmax avec élagage alpha-beta.
         """
 
         if depth == 0 or self.is_final(player):
-            return self.evaluate_v1(player)
+            return self.evaluate_test(player, m, p, c)
         if player == R:
             best_value = float("-inf")
 
             for legal in self.legals(player):
                 self.play(player, legal)
-                best_value = max(best_value, self.alphabeta(depth - 1, a, b, B))
+                best_value = max(
+                    best_value, self.alphabeta_test(depth - 1, a, b, B, m, p, c)
+                )
                 self.undo(player, legal)
                 a = max(a, best_value)
                 if a >= b:
@@ -180,7 +241,9 @@ class Engine:
 
             for legal in self.legals(player):
                 self.play(player, legal)
-                best_value = min(best_value, self.alphabeta(depth - 1, a, b, R))
+                best_value = min(
+                    best_value, self.alphabeta_test(depth - 1, a, b, R, m, p, c)
+                )
                 self.undo(player, legal)
                 b = min(b, best_value)
                 if a >= b:
@@ -188,22 +251,32 @@ class Engine:
 
             return best_value
 
-    def alphabeta_actions(
-        self, player: Player, depth: int, a: float, b: float
+    def alphabeta_actions_test(
+        self,
+        player: Player,
+        depth: int,
+        a: float,
+        b: float,
+        legals: list[Action],
+        m: float,
+        p: float,
+        c: float,
     ) -> tuple[float, list[Action]]:
         """
         Minmax avec élagage alpha-beta et choix d'une action.
         """
 
-        if depth == 0 or self.is_final(player):
-            return self.evaluate_v1(player), []
+        if depth == 0 or len(legals) == 0:
+            return self.evaluate_test(player, m, p, c), []
         if player == R:
             best_value = float("-inf")
             best_legals: list[Action] = []
+            if len(legals) == 1:
+                return best_value, legals
 
-            for legal in self.legals(player):
+            for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta(depth - 1, a, b, B)
+                v = self.alphabeta_test(depth - 1, a, b, B, m, p, c)
                 self.undo(player, legal)
                 if v > best_value:
                     best_value = v
@@ -216,84 +289,12 @@ class Engine:
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
+            if len(legals) == 1:
+                return best_value, legals
 
-            for legal in self.legals(player):
+            for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta(depth - 1, a, b, R)
-                self.undo(player, legal)
-                if v < best_value:
-                    best_value = v
-                    best_legals = [legal]
-                elif v == best_value:
-                    best_legals.append(legal)
-                b = min(b, best_value)
-
-            return best_value, best_legals
-
-    def alphabeta_v2(self, depth: int, a: float, b: float, player: Player) -> float:
-        """
-        Minmax avec élagage alpha-beta.
-        """
-
-        if depth == 0 or self.is_final(player):
-            return self.evaluate_v2(player)
-        if player == R:
-            best_value = float("-inf")
-
-            for legal in self.legals(player):
-                self.play(player, legal)
-                best_value = max(best_value, self.alphabeta_v2(depth - 1, a, b, B))
-                self.undo(player, legal)
-                a = max(a, best_value)
-                if a >= b:
-                    break  # β cut-off
-
-            return best_value
-        else:
-            best_value = float("inf")
-
-            for legal in self.legals(player):
-                self.play(player, legal)
-                best_value = min(best_value, self.alphabeta_v2(depth - 1, a, b, R))
-                self.undo(player, legal)
-                b = min(b, best_value)
-                if a >= b:
-                    break  # α cut-off
-
-            return best_value
-
-    def alphabeta_actions_v2(
-        self, player: Player, depth: int, a: float, b: float
-    ) -> tuple[float, list[Action]]:
-        """
-        Minmax avec élagage alpha-beta et choix d'une action.
-        """
-
-        if depth == 0 or self.is_final(player):
-            return self.evaluate_v2(player), []
-        if player == R:
-            best_value = float("-inf")
-            best_legals: list[Action] = []
-
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.alphabeta_v2(depth - 1, a, b, B)
-                self.undo(player, legal)
-                if v > best_value:
-                    best_value = v
-                    best_legals = [legal]
-                elif v == best_value:
-                    best_legals.append(legal)
-                a = max(a, best_value)
-
-            return best_value, best_legals
-        else:  # minimizing player
-            best_value = float("inf")
-            best_legals = []
-
-            for legal in self.legals(player):
-                self.play(player, legal)
-                v = self.alphabeta_v2(depth - 1, a, b, R)
+                v = self.alphabeta_test(depth - 1, a, b, R, m, p, c)
                 self.undo(player, legal)
                 if v < best_value:
                     best_value = v
@@ -358,26 +359,3 @@ class Engine:
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
-
-
-Environment = Engine
-
-
-def start_board(size: int) -> State:
-    grid: State = []
-    n = size - 1
-    for r in range(n, -n - 1, -1):
-        q1 = max(-n, r - n)
-        q2 = min(n, r + n)
-        for q in range(q1, q2 + 1):
-            if -q > r + (size - 3):
-                grid.append((Cell(q, r), R))
-            elif r > -q + (size - 3):
-                grid.append((Cell(q, r), B))
-            else:
-                grid.append((Cell(q, r), 0))
-    return grid
-
-
-def final_result(state: State, score: Score, player: Player):
-    pass
