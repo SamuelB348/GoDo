@@ -28,17 +28,18 @@ Time = int
 class Engine:
     def __init__(self, grid: State, hex_size: int, time: Time):
         self.grid: dict[Cell, Player] = dict(grid)
-        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
-        self.size = hex_size
-        self.time = time
+        self.R_hex: set[Cell] = {hex_key for hex_key, player in self.grid.items() if player == R}
+        self.B_hex: set[Cell] = {hex_key for hex_key, player in self.grid.items() if player == B}
+        self.size: int = hex_size
+        self.nb_checkers: int = ((self.size+1)*self.size)//2 + (self.size - 1)
+        self.time: Time = time
 
         # Attributs pour la fonction d'évaluation
         self.grid_weights_R: Optional[dict[Cell, float]] = None
         self.grid_weights_B: Optional[dict[Cell, float]] = None
 
         # Attributs pour le debug
-        self.position_explored = 0
+        self.position_explored: int = 0
 
     def update_state(self, grid: State):
         """
@@ -174,16 +175,16 @@ class Engine:
             return 10000
 
         # facteur mobilité
-        mobility = 1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
+        mobility = (3 * self.nb_checkers) * (1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1))
 
         # facteur position
         assert self.grid_weights_R is not None and self.grid_weights_B is not None
         position_r = sum(self.grid_weights_R[box] for box in self.R_hex)
         position_b = sum(self.grid_weights_B[box] for box in self.B_hex)
-        position: float = (position_r - position_b) / 13
+        position: float = (position_r - position_b) / self.nb_checkers
 
         # facteur contrôle
-        control = pins_r - pins_b
+        control = (pins_r - pins_b) / self.nb_checkers
 
         # combinaison linéaire des différents facteurs
         return m * mobility + p * position + c * control

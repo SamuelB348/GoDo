@@ -1,3 +1,4 @@
+import copy
 import time
 import random
 import pprint
@@ -62,10 +63,10 @@ def dodo_test(
             return 1
 
 
-def dodo_vsrandom(m1: float, p1: float, c1: float, size: int, player: Player):
+def dodo_vsrandom(e: Engine, m1: float, p1: float, c1: float, size: int, player: Player):
     state_tmp = start_board(size)
     time_left = 100
-    b: Engine = initialize("dodo", state_tmp, R, size, time_left)
+    b: Engine = copy.deepcopy(e)
     while True:
         s = (
             generic_strategy(b, state_tmp, R, time_left, m1, p1, c1)
@@ -88,6 +89,34 @@ def dodo_vsrandom(m1: float, p1: float, c1: float, size: int, player: Player):
             print("1", end="")
             return 1
 
+
+def dodo_vsbrain(m1: float, p1: float, c1: float, size: int, player: Player):
+    state_tmp = start_board(size)
+    time_left = 100
+    b: Engine = initialize("dodo", start_board(size), R, size, 100)
+    while True:
+        s = (
+            generic_strategy(b, state_tmp, R, time_left, m1, p1, c1)
+            if player == R
+            else strategy_brain(b, state_tmp, R, time_left)
+        )
+        new_state(state_tmp, s[1], R)
+        b.play(R, s[1])
+        b.pplot()
+        if b.is_final(B):
+            print("1", end="")
+            return -1
+        s = (
+            generic_strategy(b, state_tmp, B, time_left, m1, p1, c1)
+            if player == B
+            else strategy_brain(b, state_tmp, B, time_left)
+        )
+        new_state(state_tmp, s[1], B)
+        b.play(B, s[1])
+        b.pplot()
+        if b.is_final(R):
+            print("1", end="")
+            return 1
 
 def test_wins(strategy1: Strategy, strategy2: Strategy, grid_size: int, nb_games: int):
     print(strategy1.__name__ + " vs " + strategy2.__name__)
@@ -207,11 +236,11 @@ def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
 def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
     nb_wins = 0
     nb_losses = 0
-
+    b: Engine = initialize("dodo", start_board(grid_size), R, grid_size, 100)
     results = []
     for i in range(nb_games // 2):
         print(f"{i}, ", end="")
-        results.append(dodo_vsrandom(m, p, c, grid_size, R))
+        results.append(dodo_vsrandom(b, m, p, c, grid_size, R))
     for result in results:
         if result == 1:
             nb_wins += 1
@@ -220,7 +249,7 @@ def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
 
     results = []
     for i in range(nb_games // 2):
-        results.append(dodo_vsrandom(m, p, c, grid_size, B))
+        results.append(dodo_vsrandom(b, m, p, c, grid_size, B))
     for result in results:
         if result == -1:
             nb_wins += 1

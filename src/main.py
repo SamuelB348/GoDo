@@ -4,10 +4,11 @@ from other import *
 
 
 def main():
-    competition_framework(100, 10, 5, 100)
-    #test_strategies(4, 100)
-    # match_vsrandom(4, 100, 1, 2, -3)
-
+    #competition_framework(25, 5, 4, 20)
+    test_strategies(4, 100)
+    #match_vsrandom(5, 100, 11.87548155797398, 8.472525921917928, -16.631705605300297)
+    #match(4, 200, 8.872642693757948, 0.8594601582455841, -2.6032144455777058, 18.336937403648957, 11.890445116925694, -12.795412743345464)
+    #dodo_vsbrain(11.87548155797398, 8.472525921917928, -16.631705605300297, 4, R)
     # data = read_combs_from_file("best_combs.txt")
     #
     # # Transpose les données pour avoir trois listes de valeurs

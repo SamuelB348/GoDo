@@ -2,6 +2,7 @@ import random
 from typing import Callable
 import ast
 from engine import *
+from graph import grid_heatmap_plot
 
 Environment = Engine
 Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, Action]]
@@ -78,8 +79,8 @@ def generic_strategy(
     legals = env.legals(player)
     if len(legals) == 1:
         return env, legals[0]
-    # depth = env.adaptable_depth_bestv(len(legals), 8, 2, 7)
-    depth = 3
+    depth = env.adaptable_depth_bestv(len(legals), 8, 3, 7)
+    # depth = 3
     list_moves: list[Action] = env.alphabeta_actions_test(
         player,
         depth,
@@ -151,7 +152,7 @@ def initialize(
     if game.lower() == "dodo":
         env = Engine(state, hex_size, total_time)
         env.grid_weights_R = grid_heatmap(
-            (3 * hex_size**2 - 3 * hex_size + 1) * 10, hex_size, R
+            (3 * hex_size**2 - 3 * hex_size + 1) * 5, hex_size, R
         )
         env.grid_weights_B = grid_heatmap(
             (3 * hex_size**2 - 3 * hex_size + 1) * 10, hex_size, B
