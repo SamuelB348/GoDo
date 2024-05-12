@@ -28,21 +28,21 @@ def scale(h: Cell, k) -> Cell:
 
 
 hex_directions = [
-    Cell(-1, 0),
-    Cell(0, 1),
-    Cell(1, 1),
-    Cell(1, 0),
-    Cell(0, -1),
-    Cell(-1, -1),
+    Cell(-1, 0), #0
+    Cell(0, 1), #1
+    Cell(1, 1), #2
+    Cell(1, 0), #3
+    Cell(0, -1), #4
+    Cell(-1, -1), #5
 ]
 
 
 def hex_direction(direction) -> Cell:
-    return hex_directions[direction]
+    return hex_directions[direction] #retourne la ième direction
 
 
 def neighbor(h: Cell, direction: int):
-    return hex_add(h, hex_direction(direction))
+    return hex_add(h, hex_direction(direction)) #donne la coord de case ième direction par rapport une case
 
 
 Orientation = namedtuple(
