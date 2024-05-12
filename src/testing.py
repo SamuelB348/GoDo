@@ -131,7 +131,7 @@ def read_combs_from_file(filename):
 
 def test_strategies(grid_size: int, nb_games: int):
     already_explored = read_combs_from_file("explored_combs.txt")
-    best_coeffs: tuple = (19.810719513901237, 3.4443283784851464, -0.3107883124535604)
+    best_coeffs: tuple = (8.872642693757948, 0.8594601582455841, -2.6032144455777058)
 
     while True:
         m = random.uniform(0.0, 20.0)
@@ -174,7 +174,7 @@ def test_strategies(grid_size: int, nb_games: int):
 
             if nb_wins >= 0.6 * nb_games:
                 best_coeffs = (m, p, c)
-                write_comb_to_file("best_combs.txt", best_coeffs)
+            write_comb_to_file("best_combs.txt", best_coeffs)
 
 
 def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
