@@ -32,7 +32,7 @@ class EngineDodo:
         self.time: Time = time
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R: Optional[dict[Cell, float]] = None
+        self.grid_weights_R: Optional[dict[Cell, int | float]] = None
         self.grid_weights_B: Optional[dict[Cell, float]] = None
 
         # Attributs pour le debug
