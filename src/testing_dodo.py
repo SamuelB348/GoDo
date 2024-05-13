@@ -9,6 +9,15 @@ from gameplay import *
 from other import print_percentage_bar
 
 
+def new_state_dodo(grid: State, action: Action, player: Player) -> State:
+    for count, box in enumerate(grid):
+        if box[0] == action[0]:
+            grid[count] = (box[0], 0)
+        if box[0] == action[1]:
+            grid[count] = (box[0], player)
+    return grid
+
+
 def dodo(
     strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
 ) -> Score:
@@ -17,14 +26,14 @@ def dodo(
     b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
-        new_state(state_tmp, s[1], R)
+        new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         if debug:
             b.pplot()
         if b.is_final(B):
             return -1
         s = strategy_bleu(b, state_tmp, B, time_left)
-        new_state(state_tmp, s[1], B)
+        new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
         if debug:
             b.pplot()
@@ -50,13 +59,13 @@ def dodo_test(
     b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = generic_strategy_dodo(b, state_tmp, R, time_left, m1, p1, c1)
-        new_state(state_tmp, s[1], R)
+        new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         if b.is_final(B):
             print("1", end="")
             return -1
         s = generic_strategy_dodo(b, state_tmp, B, time_left, m2, p2, c2)
-        new_state(state_tmp, s[1], B)
+        new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
         if b.is_final(R):
             print("1", end="")
@@ -73,7 +82,7 @@ def dodo_vsrandom(e: EngineDodo, m1: float, p1: float, c1: float, size: int, pla
             if player == R
             else strategy_random(b, state_tmp, R, time_left)
         )
-        new_state(state_tmp, s[1], R)
+        new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         if b.is_final(B):
             print(B, end="")
@@ -84,7 +93,7 @@ def dodo_vsrandom(e: EngineDodo, m1: float, p1: float, c1: float, size: int, pla
             if player == B
             else strategy_random(b, state_tmp, B, time_left)
         )
-        new_state(state_tmp, s[1], B)
+        new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
         if b.is_final(R):
             print(R, end="")
@@ -102,7 +111,7 @@ def dodo_vsbrain(m1: float, p1: float, c1: float, size: int, player: Player):
             if player == R
             else strategy_brain_dodo(b, state_tmp, R, time_left)
         )
-        new_state(state_tmp, s[1], R)
+        new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         b.pplot()
         if b.is_final(B):
@@ -113,7 +122,7 @@ def dodo_vsbrain(m1: float, p1: float, c1: float, size: int, player: Player):
             if player == B
             else strategy_brain_dodo(b, state_tmp, B, time_left)
         )
-        new_state(state_tmp, s[1], B)
+        new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
         b.pplot()
         if b.is_final(R):

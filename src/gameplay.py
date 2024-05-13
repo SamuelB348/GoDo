@@ -6,8 +6,8 @@ from engine_gopher import *
 
 
 Environment = Union[EngineDodo, EngineGopher]
-Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, ActionDodo]]
 Action = Union[ActionGopher, ActionDodo]
+Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, Action]]
 
 
 #########################
@@ -58,6 +58,7 @@ def initialize(
         env = EngineDodo(hex_size, 100)
         env.update_state(state)
         env.generate_grid_heatmaps((3 * hex_size**2 - 3 * hex_size + 1) * 5)
+        return env
     elif game.lower() == "gopher":
         env = EngineGopher(state, hex_size, total_time)
         return env

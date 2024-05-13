@@ -1,5 +1,5 @@
 import numpy as np
-from testing import *
+from testing_dodo import *
 from other import *
 
 

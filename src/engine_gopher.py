@@ -32,7 +32,7 @@ class EngineGopher:
         Remet à jour les dictionnaires quand on reçoit un nouveau "state" de l'arbitre
         """
 
-        self.grid: dict[Cell, Player] = dict(grid)
+        self.grid = dict(grid)
         self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
         self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
         self.Empty_hex = {hex_key for hex_key, player in self.grid.items() if player == 0}

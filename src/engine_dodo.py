@@ -19,17 +19,17 @@ Time = int
 
 class EngineDodo:
     def __init__(self, hex_size: int, time: Time):
-        self.grid: Optional[dict[Cell, Player], None] = None
-        self.R_hex: Optional[set[Cell], None] = None
-        self.B_hex: Optional[set[Cell], None] = None
+        self.grid: Optional[dict[Cell, Player]] = None
+        self.R_hex: Optional[set[Cell]] = None
+        self.B_hex: Optional[set[Cell]] = None
 
         self.size: int = hex_size
         self.nb_checkers: int = ((self.size+1)*self.size)//2 + (self.size - 1)
         self.time: Time = time
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R: Optional[dict[Cell, float], None] = None
-        self.grid_weights_B: Optional[dict[Cell, float], None] = None
+        self.grid_weights_R: Optional[dict[Cell, float]] = None
+        self.grid_weights_B: Optional[dict[Cell, float]] = None
 
         # Attributs pour le debug
         self.position_explored: int = 0
@@ -73,25 +73,26 @@ class EngineDodo:
                 if self.is_final(B):
                     victory_count_b += 1
                     self.add_dicts(self.grid_weights_B, self.grid, B)
+                    self.back_to_start_board()
                     break
-                act: ActionDodo = random.choice(self.legals(B))
+                act = random.choice(self.legals(B))
                 self.play(B, act)
                 if self.is_final(R):
                     victory_count_r += 1
                     self.add_dicts(self.grid_weights_R, self.grid, R)
+                    self.back_to_start_board()
                     break
 
         for el in self.grid_weights_R:
             self.grid_weights_R[el] /= victory_count_r
             self.grid_weights_B[el] /= victory_count_b
-        self.back_to_start_board()
 
     def update_state(self, grid: State):
         """
         Remet à jour les dictionnaires quand on reçoit un nouveau "state" de l'arbitre
         """
 
-        self.grid: dict[Cell, Player] = dict(grid)
+        self.grid = dict(grid)
         self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
         self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
 
@@ -102,6 +103,8 @@ class EngineDodo:
         La méthode s'appuie sur les sets red_hex ou blue_hex pour gagner du temps plutôt que d'itérer sur
         toutes les cases du plateau.
         """
+
+        assert self.grid is not None and self.R_hex is not None and self.B_hex is not None
 
         legals: list[ActionDodo] = []
         if player == R:
