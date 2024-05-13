@@ -1,21 +1,13 @@
-from typing import Union, Optional
+import copy
+import random
+from typing import Optional
 from math import exp, log
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from hex_tools import (
-    Cell,
-    Point,
-    neighbor,
-    Layout,
-    layout_flat,
-    hex_to_pixel,
-    polygon_corners,
-)
+from hex_tools import *
 
 
-ActionGopher = Cell
 ActionDodo = tuple[Cell, Cell]
-Action = Union[ActionGopher, ActionDodo]
 Player = int
 R = 1
 B = 2
@@ -25,21 +17,74 @@ Evaluation = float
 Time = int
 
 
-class Engine:
-    def __init__(self, grid: State, hex_size: int, time: Time):
-        self.grid: dict[Cell, Player] = dict(grid)
-        self.R_hex: set[Cell] = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.B_hex: set[Cell] = {hex_key for hex_key, player in self.grid.items() if player == B}
+class EngineDodo:
+    def __init__(self, hex_size: int, time: Time):
+        self.grid: Optional[dict[Cell, Player], None] = None
+        self.R_hex: Optional[set[Cell], None] = None
+        self.B_hex: Optional[set[Cell], None] = None
+
         self.size: int = hex_size
         self.nb_checkers: int = ((self.size+1)*self.size)//2 + (self.size - 1)
         self.time: Time = time
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R: Optional[dict[Cell, float]] = None
-        self.grid_weights_B: Optional[dict[Cell, float]] = None
+        self.grid_weights_R: Optional[dict[Cell, float], None] = None
+        self.grid_weights_B: Optional[dict[Cell, float], None] = None
 
         # Attributs pour le debug
         self.position_explored: int = 0
+
+    def back_to_start_board(self):
+        self.grid = dict()
+        n = self.size - 1
+        for r in range(n, -n - 1, -1):
+            q1 = max(-n, r - n)
+            q2 = min(n, r + n)
+            for q in range(q1, q2 + 1):
+                if -q > r + (self.size - 3):
+                    self.grid[Cell(q, r)] = R
+                elif r > -q + (self.size - 3):
+                    self.grid[Cell(q, r)] = B
+                else:
+                    self.grid[Cell(q, r)] = 0
+        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
+        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
+
+    @staticmethod
+    def add_dicts(dict1, dict2, player: Player):
+        for key in dict2.keys():
+            if dict2[key] == player:
+                dict1[key] += 1
+
+    def generate_grid_heatmaps(self, nb_games: int):
+        self.grid_weights_R: dict[Cell, float] = copy.deepcopy(self.grid)
+        self.grid_weights_B: dict[Cell, float] = copy.deepcopy(self.grid)
+        for el in self.grid_weights_R.keys():
+            self.grid_weights_R[el] = 0
+            self.grid_weights_B[el] = 0
+
+        victory_count_r: int = 0
+        victory_count_b: int = 0
+
+        for i in range(nb_games):
+            while True:
+                act: ActionDodo = random.choice(self.legals(R))
+                self.play(R, act)
+                if self.is_final(B):
+                    victory_count_b += 1
+                    self.add_dicts(self.grid_weights_B, self.grid, B)
+                    break
+                act: ActionDodo = random.choice(self.legals(B))
+                self.play(B, act)
+                if self.is_final(R):
+                    victory_count_r += 1
+                    self.add_dicts(self.grid_weights_R, self.grid, R)
+                    break
+
+        for el in self.grid_weights_R:
+            self.grid_weights_R[el] /= victory_count_r
+            self.grid_weights_B[el] /= victory_count_b
+        self.back_to_start_board()
 
     def update_state(self, grid: State):
         """
@@ -50,7 +95,7 @@ class Engine:
         self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
         self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
 
-    def legals(self, player: Player) -> list[Action]:
+    def legals(self, player: Player) -> list[ActionDodo]:
         """
         Retourne les coups légaux du joueur en paramètre
 
@@ -58,7 +103,7 @@ class Engine:
         toutes les cases du plateau.
         """
 
-        legals: list[Action] = []
+        legals: list[ActionDodo] = []
         if player == R:
             for box in self.R_hex:
                 for i in [1, 2, 3]:
@@ -80,7 +125,7 @@ class Engine:
     def is_final(self, player: Player) -> bool:
         return len(self.legals(player)) == 0
 
-    def play(self, player: Player, action: Action):
+    def play(self, player: Player, action: ActionDodo):
         """
         Joue une action légale et modifie les attributs.
 
@@ -92,7 +137,7 @@ class Engine:
         self.grid[action[1]] = player
         self.update_sets(player, action)
 
-    def undo(self, player: Player, action: Action):
+    def undo(self, player: Player, action: ActionDodo):
         """
         Inverse de la méthode play.
         """
@@ -101,7 +146,7 @@ class Engine:
         self.grid[action[1]] = 0
         self.reverse_update_sets(player, action)
 
-    def update_sets(self, player: Player, action: Action):
+    def update_sets(self, player: Player, action: ActionDodo):
         """
         Met à jour les sets red_hex et blue_hex après une action.
         """
@@ -113,7 +158,7 @@ class Engine:
             self.B_hex.discard(action[0])
             self.B_hex.add(action[1])
 
-    def reverse_update_sets(self, player: Player, action: Action):
+    def reverse_update_sets(self, player: Player, action: ActionDodo):
         """
         Met à jour les sets red_hex et blue_hex après un "undo".
         """
@@ -155,7 +200,7 @@ class Engine:
                         count += 1
         return count
 
-    def evaluate_test(
+    def evaluate_v1(
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
         nb_moves_r: int = len(self.legals(R))
@@ -190,7 +235,7 @@ class Engine:
         return m * mobility + p * position + c * control
 
     @staticmethod
-    def adaptable_depth_bestv(
+    def adaptable_depth_v1(
         x: int, upper_bound: int, lower_bound: int, critical_point: int
     ) -> int:
         d = upper_bound - (
@@ -199,15 +244,14 @@ class Engine:
         return round(d)
 
     @staticmethod
-    def adaptable_depth_v2(
-        x: int, upper_bound: int, lower_bound: int, critical_point: int
-    ):
-        d = upper_bound - (
-            (upper_bound - lower_bound) / (1 + exp(-0.7 * (x - critical_point)))
-        )
-        return round(d)
+    def adaptable_depth_v2(x: int, y: int,  nb: int, max_depth: int) -> int:
+        if y == 0 or y == 1:
+            d = log(nb)/(log(x)*log(2)) + 2
+        else:
+            d = log(nb)/(log(x)*log(y)) + 2
+        return min(round(d), max_depth)
 
-    def alphabeta_test(
+    def alphabeta_v1(
         self,
         depth: int,
         a: float,
@@ -222,14 +266,14 @@ class Engine:
         """
 
         if depth == 0 or self.is_final(player):
-            return self.evaluate_test(player, m, p, c)
+            return self.evaluate_v1(player, m, p, c)
         if player == R:
             best_value = float("-inf")
 
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = max(
-                    best_value, self.alphabeta_test(depth - 1, a, b, B, m, p, c)
+                    best_value, self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
                 )
                 self.undo(player, legal)
                 a = max(a, best_value)
@@ -243,7 +287,7 @@ class Engine:
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = min(
-                    best_value, self.alphabeta_test(depth - 1, a, b, R, m, p, c)
+                    best_value, self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
                 )
                 self.undo(player, legal)
                 b = min(b, best_value)
@@ -252,32 +296,32 @@ class Engine:
 
             return best_value
 
-    def alphabeta_actions_test(
+    def alphabeta_actions_v1(
         self,
         player: Player,
         depth: int,
         a: float,
         b: float,
-        legals: list[Action],
+        legals: list[ActionDodo],
         m: float,
         p: float,
         c: float,
-    ) -> tuple[float, list[Action]]:
+    ) -> tuple[float, list[ActionDodo]]:
         """
         Minmax avec élagage alpha-beta et choix d'une action.
         """
 
         if depth == 0 or len(legals) == 0:
-            return self.evaluate_test(player, m, p, c), []
+            return self.evaluate_v1(player, m, p, c), []
         if player == R:
             best_value = float("-inf")
-            best_legals: list[Action] = []
+            best_legals: list[ActionDodo] = []
             if len(legals) == 1:
                 return best_value, legals
 
             for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta_test(depth - 1, a, b, B, m, p, c)
+                v = self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
                 self.undo(player, legal)
                 if v > best_value:
                     best_value = v
@@ -295,7 +339,7 @@ class Engine:
 
             for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta_test(depth - 1, a, b, R, m, p, c)
+                v = self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
                 self.undo(player, legal)
                 if v < best_value:
                     best_value = v

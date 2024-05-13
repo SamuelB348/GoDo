@@ -6,15 +6,15 @@ import multiprocessing
 from itertools import product
 import numpy as np
 from gameplay import *
-from graph import print_percentage_bar
+from other import print_percentage_bar
 
 
 def dodo(
     strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
 ) -> Score:
-    state_tmp = start_board(size)
+    state_tmp = start_board_dodo(size)
     time_left = 100
-    b: Engine = initialize("dodo", state_tmp, R, size, time_left)
+    b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
         new_state(state_tmp, s[1], R)
@@ -45,17 +45,17 @@ def wrapper2(args):
 def dodo_test(
     m1: float, p1: float, c1: float, m2: float, p2: float, c2: float, size: int
 ):
-    state_tmp = start_board(size)
+    state_tmp = start_board_dodo(size)
     time_left = 100
-    b: Engine = initialize("dodo", state_tmp, R, size, time_left)
+    b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
-        s = generic_strategy(b, state_tmp, R, time_left, m1, p1, c1)
+        s = generic_strategy_dodo(b, state_tmp, R, time_left, m1, p1, c1)
         new_state(state_tmp, s[1], R)
         b.play(R, s[1])
         if b.is_final(B):
             print("1", end="")
             return -1
-        s = generic_strategy(b, state_tmp, B, time_left, m2, p2, c2)
+        s = generic_strategy_dodo(b, state_tmp, B, time_left, m2, p2, c2)
         new_state(state_tmp, s[1], B)
         b.play(B, s[1])
         if b.is_final(R):
@@ -63,42 +63,44 @@ def dodo_test(
             return 1
 
 
-def dodo_vsrandom(e: Engine, m1: float, p1: float, c1: float, size: int, player: Player):
-    state_tmp = start_board(size)
+def dodo_vsrandom(e: EngineDodo, m1: float, p1: float, c1: float, size: int, player: Player):
+    state_tmp = start_board_dodo(size)
     time_left = 100
-    b: Engine = copy.deepcopy(e)
+    b: EngineDodo = copy.deepcopy(e)
     while True:
         s = (
-            generic_strategy(b, state_tmp, R, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, R, time_left, m1, p1, c1)
             if player == R
             else strategy_random(b, state_tmp, R, time_left)
         )
         new_state(state_tmp, s[1], R)
         b.play(R, s[1])
         if b.is_final(B):
-            print("1", end="")
+            print(B, end="")
+            b.pplot()
             return -1
         s = (
-            generic_strategy(b, state_tmp, B, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, B, time_left, m1, p1, c1)
             if player == B
             else strategy_random(b, state_tmp, B, time_left)
         )
         new_state(state_tmp, s[1], B)
         b.play(B, s[1])
         if b.is_final(R):
-            print("1", end="")
+            print(R, end="")
+            b.pplot()
             return 1
 
 
 def dodo_vsbrain(m1: float, p1: float, c1: float, size: int, player: Player):
-    state_tmp = start_board(size)
+    state_tmp = start_board_dodo(size)
     time_left = 100
-    b: Engine = initialize("dodo", start_board(size), R, size, 100)
+    b: EngineDodo = initialize("dodo", start_board_dodo(size), R, size, 100)
     while True:
         s = (
-            generic_strategy(b, state_tmp, R, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, R, time_left, m1, p1, c1)
             if player == R
-            else strategy_brain(b, state_tmp, R, time_left)
+            else strategy_brain_dodo(b, state_tmp, R, time_left)
         )
         new_state(state_tmp, s[1], R)
         b.play(R, s[1])
@@ -107,9 +109,9 @@ def dodo_vsbrain(m1: float, p1: float, c1: float, size: int, player: Player):
             print("1", end="")
             return -1
         s = (
-            generic_strategy(b, state_tmp, B, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, B, time_left, m1, p1, c1)
             if player == B
-            else strategy_brain(b, state_tmp, B, time_left)
+            else strategy_brain_dodo(b, state_tmp, B, time_left)
         )
         new_state(state_tmp, s[1], B)
         b.play(B, s[1])
@@ -159,8 +161,8 @@ def read_combs_from_file(filename):
 
 
 def test_strategies(grid_size: int, nb_games: int):
-    already_explored = read_combs_from_file("explored_combs.txt")
-    best_coeffs: tuple = (8.872642693757948, 0.8594601582455841, -2.6032144455777058)
+    already_explored = read_combs_from_file("logs/explored_combs.txt")
+    best_coeffs: tuple = (11.87548155797398, 8.472525921917928, -16.631705605300297)
 
     while True:
         m = random.uniform(0.0, 20.0)
@@ -171,7 +173,7 @@ def test_strategies(grid_size: int, nb_games: int):
             and (m, p, c) not in already_explored
         ):
             already_explored.append((m, p, c))
-            write_comb_to_file("explored_combs.txt", (m, p, c))
+            write_comb_to_file("logs/explored_combs.txt", (m, p, c))
 
             print(f"mobility : {m}, pos : {p}, con: {c}")
             nb_wins = 0
@@ -203,7 +205,7 @@ def test_strategies(grid_size: int, nb_games: int):
 
             if nb_wins >= 0.6 * nb_games:
                 best_coeffs = (m, p, c)
-            write_comb_to_file("best_combs.txt", best_coeffs)
+            write_comb_to_file("logs/best_combs.txt", best_coeffs)
 
 
 def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
@@ -236,10 +238,9 @@ def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
 def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
     nb_wins = 0
     nb_losses = 0
-    b: Engine = initialize("dodo", start_board(grid_size), R, grid_size, 100)
+    b: EngineDodo = initialize("dodo", start_board_dodo(grid_size), R, grid_size, 100)
     results = []
     for i in range(nb_games // 2):
-        print(f"{i}, ", end="")
         results.append(dodo_vsrandom(b, m, p, c, grid_size, R))
     for result in results:
         if result == 1:
@@ -252,8 +253,10 @@ def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
         results.append(dodo_vsrandom(b, m, p, c, grid_size, B))
     for result in results:
         if result == -1:
+            print(1, end="")
             nb_wins += 1
         else:
+            print(2, end="")
             nb_losses += 1
 
     print(f"\n{[m, p, c]} vs random : Wins: {nb_wins}, Losses: {nb_losses}\n")

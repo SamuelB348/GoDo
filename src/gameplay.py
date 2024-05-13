@@ -1,14 +1,21 @@
 import random
-from typing import Callable
+from typing import Callable, Union
 import ast
-from engine import *
-from graph import grid_heatmap_plot
-
-Environment = Engine
-Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, Action]]
+from engine_dodo import *
+from engine_gopher import *
 
 
-def start_board(size: int) -> State:
+Environment = Union[EngineDodo, EngineGopher]
+Strategy = Callable[[Environment, State, Player, Time], tuple[Environment, ActionDodo]]
+Action = Union[ActionGopher, ActionDodo]
+
+
+#########################
+# Initialisation de DODO
+#########################
+
+
+def start_board_dodo(size: int) -> State:
     grid: State = []
     n = size - 1
     for r in range(n, -n - 1, -1):
@@ -24,6 +31,38 @@ def start_board(size: int) -> State:
     return grid
 
 
+###########################
+# Initialisation de GOPHER
+###########################
+
+def start_board_gopher(size: int) -> State:
+    grid: State = []
+    n = size - 1
+    for r in range(n, -n - 1, -1):
+        q1 = max(-n, r - n)
+        q2 = min(n, r + n)
+        for q in range(q1, q2 + 1):
+            grid.append((Cell(q, r), 0))
+    return grid
+
+
+##################################################
+# Initialisation générale
+##################################################
+
+
+def initialize(
+    game: str, state: State, player: Player, hex_size: int, total_time: Time
+) -> Environment:
+    if game.lower() == "dodo":
+        env = EngineDodo(hex_size, 100)
+        env.update_state(state)
+        env.generate_grid_heatmaps((3 * hex_size**2 - 3 * hex_size + 1) * 5)
+    elif game.lower() == "gopher":
+        env = EngineGopher(state, hex_size, total_time)
+        return env
+
+
 def final_result(state: State, score: Score, player: Player):
     pass
 
@@ -33,7 +72,7 @@ def final_result(state: State, score: Score, player: Player):
 ##################################################
 
 
-def strategy_brain(
+def strategy_brain_dodo(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
     env.update_state(state)
@@ -58,6 +97,12 @@ def strategy_brain(
     return env, (src_cell, dest_cell)
 
 
+def strategy_brain_gopher(
+    env: Environment, state: State, player: Player, time_left: Time
+) -> tuple[Environment, Action]:
+    pass
+
+
 def strategy_random(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
@@ -65,7 +110,7 @@ def strategy_random(
     return env, random.choice(env.legals(player))
 
 
-def generic_strategy(
+def generic_strategy_dodo(
     env: Environment,
     state: State,
     player: Player,
@@ -74,14 +119,17 @@ def generic_strategy(
     p: float,
     c: float,
 ) -> tuple[Environment, Action]:
-
     env.update_state(state)
+
+    opponent: int = R if player == B else B
     legals = env.legals(player)
+    legals_opp = env.legals(opponent)
+
     if len(legals) == 1:
         return env, legals[0]
-    depth = env.adaptable_depth_bestv(len(legals), 8, 3, 7)
-    # depth = 3
-    list_moves: list[Action] = env.alphabeta_actions_test(
+
+    depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 5000, 10)
+    list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
         player,
         depth,
         float("-inf"),
@@ -91,72 +139,11 @@ def generic_strategy(
         p,
         c,
     )[1]
+
+    for action in list_moves:
+        if player == R and hex_sub(action[1], action[0]) == hex_directions[2]:
+            return env, action
+        if player == B and hex_sub(action[1], action[0]) == hex_directions[5]:
+            return env, action
+
     return env, random.choice(list_moves)
-
-
-##################################################
-# Autres fonctions permettant l'initialisation
-##################################################
-
-
-def new_state(grid: State, action: Action, player: Player) -> State:
-    for count, box in enumerate(grid):
-        if box[0] == action[0]:
-            grid[count] = (box[0], 0)
-        if box[0] == action[1]:
-            grid[count] = (box[0], player)
-    return grid
-
-
-def add_dicts(dict1, dict2, player: Player):
-    for key in dict2.keys():
-        if dict2[key] == player:
-            dict1[key] += 1
-
-
-def grid_heatmap(nb_games: int, board_size: int, player: Player):
-    count_dict: dict[Cell, float] = dict(start_board(board_size))
-    for el in count_dict:
-        count_dict[el] = 0
-
-    victory_count: int = 0
-    for i in range(nb_games):
-        state_tmp = start_board(board_size)
-        b: Engine = Engine(state_tmp, board_size, 100)
-        while True:
-            s = strategy_random(b, state_tmp, R, 100)
-            new_state(state_tmp, s[1], R)
-            b.play(R, s[1])
-            if b.is_final(B):
-                if player == B:
-                    victory_count += 1
-                    add_dicts(count_dict, dict(state_tmp), B)
-                break
-            s = strategy_random(b, state_tmp, B, 100)
-            new_state(state_tmp, s[1], B)
-            b.play(B, s[1])
-            if b.is_final(R):
-                if player == R:
-                    victory_count += 1
-                    add_dicts(count_dict, dict(state_tmp), R)
-                break
-
-    for el in count_dict:
-        count_dict[el] /= victory_count
-    return count_dict
-
-
-def initialize(
-    game: str, state: State, player: Player, hex_size: int, total_time: Time
-) -> Environment:
-    if game.lower() == "dodo":
-        env = Engine(state, hex_size, total_time)
-        env.grid_weights_R = grid_heatmap(
-            (3 * hex_size**2 - 3 * hex_size + 1) * 5, hex_size, R
-        )
-        env.grid_weights_B = grid_heatmap(
-            (3 * hex_size**2 - 3 * hex_size + 1) * 10, hex_size, B
-        )
-        return env
-    else:
-        return Engine(state, hex_size, total_time)
