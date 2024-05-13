@@ -55,8 +55,7 @@ def initialize(
     game: str, state: State, player: Player, hex_size: int, total_time: Time
 ) -> Environment:
     if game.lower() == "dodo":
-        env = EngineDodo(hex_size, 100)
-        env.update_state(state)
+        env = EngineDodo(state, hex_size, 100)
         env.generate_grid_heatmaps((3 * hex_size**2 - 3 * hex_size + 1) * 5)
         return env
     elif game.lower() == "gopher":

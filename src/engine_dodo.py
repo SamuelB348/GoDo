@@ -18,13 +18,17 @@ Time = int
 
 
 class EngineDodo:
-    def __init__(self, hex_size: int, time: Time):
-        self.grid: Optional[dict[Cell, Player]] = None
-        self.R_hex: Optional[set[Cell]] = None
-        self.B_hex: Optional[set[Cell]] = None
+    def __init__(self, grid: State, hex_size: int, time: Time):
+        self.grid: dict[Cell, Player] = dict(grid)
+        self.R_hex: set[Cell] = {
+            hex_key for hex_key, player in self.grid.items() if player == R
+        }
+        self.B_hex: set[Cell] = {
+            hex_key for hex_key, player in self.grid.items() if player == B
+        }
 
         self.size: int = hex_size
-        self.nb_checkers: int = ((self.size+1)*self.size)//2 + (self.size - 1)
+        self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
         self.time: Time = time
 
         # Attributs pour la fonction d'évaluation
@@ -35,7 +39,7 @@ class EngineDodo:
         self.position_explored: int = 0
 
     def back_to_start_board(self):
-        self.grid = dict()
+        self.grid = {}
         n = self.size - 1
         for r in range(n, -n - 1, -1):
             q1 = max(-n, r - n)
@@ -57,8 +61,8 @@ class EngineDodo:
                 dict1[key] += 1
 
     def generate_grid_heatmaps(self, nb_games: int):
-        self.grid_weights_R: dict[Cell, float] = copy.deepcopy(self.grid)
-        self.grid_weights_B: dict[Cell, float] = copy.deepcopy(self.grid)
+        self.grid_weights_R = copy.deepcopy(self.grid)
+        self.grid_weights_B = copy.deepcopy(self.grid)
         for el in self.grid_weights_R.keys():
             self.grid_weights_R[el] = 0
             self.grid_weights_B[el] = 0
@@ -66,7 +70,7 @@ class EngineDodo:
         victory_count_r: int = 0
         victory_count_b: int = 0
 
-        for i in range(nb_games):
+        for _ in range(nb_games):
             while True:
                 act: ActionDodo = random.choice(self.legals(R))
                 self.play(R, act)
@@ -100,11 +104,9 @@ class EngineDodo:
         """
         Retourne les coups légaux du joueur en paramètre
 
-        La méthode s'appuie sur les sets red_hex ou blue_hex pour gagner du temps plutôt que d'itérer sur
-        toutes les cases du plateau.
+        La méthode s'appuie sur les sets red_hex ou blue_hex pour gagner du temps plutôt que d'itérer
+        sur toutes les cases du plateau.
         """
-
-        assert self.grid is not None and self.R_hex is not None and self.B_hex is not None
 
         legals: list[ActionDodo] = []
         if player == R:
@@ -132,8 +134,8 @@ class EngineDodo:
         """
         Joue une action légale et modifie les attributs.
 
-        Il faut à la fois modifier le dictionnaire de toutes les cases (grid) et les sets des cases de chaque joueur
-        (red_hex et blue_hex).
+        Il faut à la fois modifier le dictionnaire de toutes les cases (grid) et les sets des cases de
+        chaque joueur (red_hex et blue_hex).
         """
 
         self.grid[action[0]] = 0
@@ -193,13 +195,16 @@ class EngineDodo:
 
         count: int = 0
         opponent = R if player == B else B
-        for box in (self.R_hex if player == R else self.B_hex):
+        for box in self.R_hex if player == R else self.B_hex:
             neighbors = self.neighbors(box, player)
             if all(
                 neighbors.values()
             ):  # Si toutes les cases voisines sont occupées (c.-à-d. != 0)
-                for el in neighbors.keys():
-                    if neighbors[el] == opponent and 0 in self.neighbors(el, opponent).values():
+                for cell, value in neighbors.items():
+                    if (
+                        value == opponent
+                        and 0 in self.neighbors(cell, opponent).values()
+                    ):
                         count += 1
         return count
 
@@ -223,7 +228,9 @@ class EngineDodo:
             return 10000
 
         # facteur mobilité
-        mobility = (3 * self.nb_checkers) * (1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1))
+        mobility = (3 * self.nb_checkers) * (
+            1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
+        )
 
         # facteur position
         assert self.grid_weights_R is not None and self.grid_weights_B is not None
@@ -247,11 +254,11 @@ class EngineDodo:
         return round(d)
 
     @staticmethod
-    def adaptable_depth_v2(x: int, y: int,  nb: int, max_depth: int) -> int:
-        if y == 0 or y == 1:
-            d = log(nb)/(log(x)*log(2)) + 2
+    def adaptable_depth_v2(x: int, y: int, nb: int, max_depth: int) -> int:
+        if y in (0, 1):
+            d = log(nb) / (log(x) * log(2)) + 2
         else:
-            d = log(nb)/(log(x)*log(y)) + 2
+            d = log(nb) / (log(x) * log(y)) + 2
         return min(round(d), max_depth)
 
     def alphabeta_v1(
