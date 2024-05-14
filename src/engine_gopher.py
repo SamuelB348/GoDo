@@ -38,7 +38,34 @@ class EngineGopher:
         self.Empty_hex = {hex_key for hex_key, player in self.grid.items() if player == 0}
 
     def legals(self, player: Player) -> list[ActionGopher]:
-        pass
+        if player == R:
+            for box in self.Empty_hex:
+                nb_neighbors = 0
+                for i in [0, 1, 2, 3, 4, 5]:
+                    if self.grid[neighbor(box, i)] == R:
+                        nb_neighbors = 0
+                        break
+                    elif (
+                            neighbor(box, i) in self.grid
+                            and self.grid[neighbor(box, i)] == B
+                    ):
+                        nb_neighbors += 1
+                if nb_neighbors == 1:
+                    yield box, neighbor(box, player)
+        elif player == B:
+            for box in self.Empty_hex:
+                nb_neighbors = 0
+                for i in [0, 1, 2, 3, 4, 5]:
+                    if self.grid[neighbor(box, i)] == B:
+                        nb_neighbors = 0
+                        break
+                    elif (
+                            neighbor(box, i) in self.grid
+                            and self.grid[neighbor(box, i)] == R
+                    ):
+                        nb_neighbors += 1
+                if nb_neighbors == 1:
+                    yield box, neighbor(box, player)
 
     def is_final(self, player: Player) -> bool:
         pass
