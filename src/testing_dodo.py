@@ -174,7 +174,7 @@ def test_strategies(grid_size: int, nb_games: int):
     best_coeffs: tuple = (11.87548155797398, 8.472525921917928, -16.631705605300297)
 
     while True:
-        m = random.uniform(0.0, 20.0)
+        m = random.uniform(-20.0, 20.0)
         p = random.uniform(0.0, 20.0)
         c = random.uniform(-20.0, 0.0)
         if (
@@ -215,6 +215,54 @@ def test_strategies(grid_size: int, nb_games: int):
             if nb_wins >= 0.6 * nb_games:
                 best_coeffs = (m, p, c)
             write_comb_to_file("logs/best_combs.txt", best_coeffs)
+
+
+def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
+    best_coeffs = np.array((8.6709186, 1.9808019, -2.61928918))
+    list_best_coeff = []
+    count = 0
+    while True:
+        deltas = np.random.normal(0, 2, 3)
+        coeffs_a = tuple(np.add(deltas, best_coeffs))
+        coeffs_b = tuple(np.add(-deltas, best_coeffs))
+        results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_b[0], coeffs_b[1], coeffs_b[2])
+        if results[0] > 0.5*nb_games:  # coeffs_a ont gagné
+            best_coeffs = np.add(best_coeffs, np.subtract(coeffs_a, best_coeffs)*factor)
+        else:
+            best_coeffs = np.add(best_coeffs, np.subtract(coeffs_b, best_coeffs) * factor)
+        print(best_coeffs)
+        list_best_coeff.append(best_coeffs)
+        if count % 2 == 0:
+            plt.plot([coeff[0] for coeff in list_best_coeff])
+            plt.plot([coeff[1] for coeff in list_best_coeff])
+            plt.plot([coeff[2] for coeff in list_best_coeff])
+            plt.show()
+        count += 1
+
+
+def tuning_dodo_v2(grid_size: int, nb_games: int, nb_iter: int, a=0.01, c=0.05):
+    best_coeffs = np.array((-10.28453201, 3.12370101, -8.05037163))
+    list_best_coeff = []
+    count = 0
+    alpha = 0.602
+    gamma = 0.101
+    A = nb_iter * 0.1
+    for k in range(nb_iter):
+        ak = a / (k + 1 + A)**alpha
+        ck = c / (k + 1)**gamma
+        delta = np.random.choice([-1, 1], size=3)
+        coeffs_a = best_coeffs + ck * delta
+        coeffs_b = best_coeffs - ck * delta
+        results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_b[0], coeffs_b[1], coeffs_b[2])
+        best_coeffs = best_coeffs + ak * (results[0] - results[1]) / (ck * delta)
+        print(best_coeffs)
+        list_best_coeff.append(best_coeffs)
+        if count % 10 == 0:
+            plt.plot([coeff[0] for coeff in list_best_coeff])
+            plt.plot([coeff[1] for coeff in list_best_coeff])
+            plt.plot([coeff[2] for coeff in list_best_coeff])
+            plt.show()
+        count += 1
 
 
 def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):

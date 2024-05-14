@@ -228,9 +228,10 @@ class EngineDodo:
             return 10000
 
         # facteur mobilité
-        mobility = (3 * self.nb_checkers) * (
-            1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
-        )
+        # mobility = (3 * self.nb_checkers) * (
+        #     1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
+        # )
+        mobility = (nb_moves_r - nb_moves_b) / (3*self.nb_checkers)
 
         # facteur position
         assert self.grid_weights_R is not None and self.grid_weights_B is not None
