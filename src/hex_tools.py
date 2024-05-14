@@ -53,9 +53,9 @@ Layout = namedtuple("Layout", ["orientation", "size", "origin"])
 
 layout_pointy = Orientation(
     math.sqrt(3.0),
-    math.sqrt(3.0) / 2.0,
+    -math.sqrt(3.0) / 2.0,
     0.0,
-    3.0 / 2.0,
+    -3.0 / 2.0,
     math.sqrt(3.0) / 3.0,
     -1.0 / 3.0,
     0.0,

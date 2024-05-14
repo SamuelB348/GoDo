@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from hex_tools import *
 
+
 ActionGopher = Cell
 ActionDodo = tuple[Cell, Cell]
 Action = Union[ActionGopher, ActionDodo]
@@ -24,8 +25,6 @@ class Engine:
         self.blue_hex = {
             hex_key for hex_key, player in self.grid.items() if player == B
         }
-        self.white_hex = {hex_key for hex_key, player in self.grid.items() if
-                          not (player == R or player == B)}  #rajouté
         self.size = hex_size
         self.time = time
 
@@ -52,48 +51,18 @@ class Engine:
             for box in self.red_hex:
                 for i in [1, 2, 3]:
                     if (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == 0
+                        neighbor(box, i) in self.grid
+                        and self.grid[neighbor(box, i)] == 0
                     ):
                         yield box, neighbor(box, i)
         elif player == B:
             for box in self.blue_hex:
                 for i in [0, 4, 5]:
                     if (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == 0
+                        neighbor(box, i) in self.grid
+                        and self.grid[neighbor(box, i)] == 0
                     ):
                         yield box, neighbor(box, i)
-
-    def legals_gopher(self, player: Player) -> Iterator[Action]:
-        if player == R:
-            for box in self.white_hex:
-                nb_neighbors = 0
-                for i in [0, 1, 2, 3, 4, 5]:
-                    if self.grid[neighbor(box, i)] == R:
-                        nb_neighbors = 0
-                        break
-                    elif (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == B
-                    ):
-                        nb_neighbors += 1
-                if nb_neighbors == 1:
-                    yield box, neighbor(box, player)
-        elif player == B:
-            for box in self.white_hex:
-                nb_neighbors = 0
-                for i in [0, 1, 2, 3, 4, 5]:
-                    if self.grid[neighbor(box, i)] == B:
-                        nb_neighbors = 0
-                        break
-                    elif (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == R
-                    ):
-                        nb_neighbors += 1
-                if nb_neighbors == 1:
-                    yield box, neighbor(box, player)
 
     def is_final(self, player: Player) -> bool:
         return len(list(self.legals(player))) == 0
@@ -251,7 +220,7 @@ class Engine:
             return best_value
 
     def alphabeta_actions(
-            self, player: Player, depth: int, a: float, b: float
+        self, player: Player, depth: int, a: float, b: float
     ) -> tuple[float, list[Action]]:
         """
         Minmax avec élagage alpha-beta et choix d'une action.
@@ -366,7 +335,7 @@ def start_board(size: int) -> State:
 
 
 def initialize(
-        game: str, state: State, player: Player, hex_size: int, total_time: Time
+    game: str, state: State, player: Player, hex_size: int, total_time: Time
 ) -> Environment:
     if game.lower() == "dodo":
         return Engine(state, hex_size, total_time)
