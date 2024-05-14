@@ -27,6 +27,8 @@ class EngineDodo:
             hex_key for hex_key, player in self.grid.items() if player == B
         }
 
+        self.R_neighbors = {cell: [neighbor(cell, 1), neighbor(cell, 2), neighbor(cell, 3)] for cell in self.grid}
+        self.B_neighbors = {cell: [neighbor(cell, 0), neighbor(cell, 4), neighbor(cell, 5)] for cell in self.grid}
         self.size: int = hex_size
         self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
         self.time: Time = time
@@ -34,9 +36,23 @@ class EngineDodo:
         # Attributs pour la fonction d'évaluation
         self.grid_weights_R: Optional[dict[Cell, int | float]] = None
         self.grid_weights_B: Optional[dict[Cell, float]] = None
+        self.cache = {}
 
         # Attributs pour le debug
         self.position_explored: int = 0
+
+    @staticmethod
+    def symetrical(dico):
+        sym = tuple()
+        for cell in dico.keys():
+            dist = abs(cell[0] - cell[1])
+            if cell[0] < cell[1]:
+                sym += ((cell, dico[(cell[0]+dist, cell[1]-dist)]),)
+            elif cell[0] > cell[1]:
+                sym += ((cell, dico[(cell[0]-dist, cell[1]+dist)]),)
+            else:
+                sym += ((cell, dico[cell]),)
+        return sym
 
     def back_to_start_board(self):
         self.grid = {}
@@ -111,20 +127,21 @@ class EngineDodo:
         legals: list[ActionDodo] = []
         if player == R:
             for box in self.R_hex:
-                for i in [1, 2, 3]:
+                for nghb in self.R_neighbors[box]:
                     if (
-                        neighbor(box, i) in self.grid.keys()
-                        and self.grid[neighbor(box, i)] == 0
+                        nghb in self.grid
+                        and self.grid[nghb] == 0
                     ):
-                        legals.append((box, neighbor(box, i)))
+                        legals.append((box, nghb))
         elif player == B:
             for box in self.B_hex:
-                for i in [0, 4, 5]:
+                for nghb in self.B_neighbors[box]:
                     if (
-                        neighbor(box, i) in self.grid
-                        and self.grid[neighbor(box, i)] == 0
+                        nghb in self.grid.keys()
+                        and self.grid[nghb] == 0
                     ):
-                        legals.append((box, neighbor(box, i)))
+                        legals.append((box, nghb))
+
         return legals
 
     def is_final(self, player: Player) -> bool:
@@ -178,13 +195,9 @@ class EngineDodo:
     def neighbors(self, cell: Cell, player: Player) -> dict[Cell, Player]:
         neighbors: dict[Cell, Player] = {}
         if player == R:
-            for i in [1, 2, 3]:
-                if neighbor(cell, i) in self.grid:
-                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+            neighbors = {nghb: self.grid[nghb] for nghb in self.R_neighbors[cell] if nghb in self.grid}
         if player == B:
-            for i in [0, 4, 5]:
-                if neighbor(cell, i) in self.grid:
-                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+            neighbors = {nghb: self.grid[nghb] for nghb in self.B_neighbors[cell] if nghb in self.grid}
         return neighbors
 
     def nb_pins(self, player: Player) -> int:
@@ -211,6 +224,11 @@ class EngineDodo:
     def evaluate_v1(
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
+
+        state = tuple((key, value) for key, value in self.grid.items())
+        if state in self.cache:
+            return self.cache[state]
+
         nb_moves_r: int = len(self.legals(R))
         nb_moves_b: int = len(self.legals(B))
         # Si un des deux joueurs gagne
@@ -242,8 +260,12 @@ class EngineDodo:
         # facteur contrôle
         control = (pins_r - pins_b) / self.nb_checkers
 
+        evaluation = m * mobility + p * position + c * control
+        self.cache[state] = evaluation
+        # sym = self.symetrical(self.grid)
+        # self.cache[sym] = evaluation
         # combinaison linéaire des différents facteurs
-        return m * mobility + p * position + c * control
+        return evaluation
 
     @staticmethod
     def adaptable_depth_v1(
@@ -290,7 +312,6 @@ class EngineDodo:
                 a = max(a, best_value)
                 if a >= b:
                     break  # β cut-off
-
             return best_value
         else:
             best_value = float("inf")
@@ -304,7 +325,6 @@ class EngineDodo:
                 b = min(b, best_value)
                 if a >= b:
                     break  # α cut-off
-
             return best_value
 
     def alphabeta_actions_v1(
@@ -340,7 +360,6 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
@@ -358,7 +377,6 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-
             return best_value, best_legals
 
     def pplot(self):

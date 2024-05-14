@@ -42,7 +42,9 @@ def hex_direction(direction) -> Cell:
 
 
 def neighbor(h: Cell, direction: int):
-    return hex_add(h, hex_direction(direction))
+    # return hex_add(h, hex_direction(direction))
+    dir = hex_directions[direction]
+    return Cell(h.q + dir.q, h.r + dir.r)
 
 
 Orientation = namedtuple(
