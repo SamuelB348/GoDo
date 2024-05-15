@@ -27,8 +27,8 @@ class EngineDodo:
             hex_key for hex_key, player in self.grid.items() if player == B
         }
 
-        self.R_neighbors = {cell: [neighbor(cell, 1), neighbor(cell, 2), neighbor(cell, 3)] for cell in self.grid}
-        self.B_neighbors = {cell: [neighbor(cell, 0), neighbor(cell, 4), neighbor(cell, 5)] for cell in self.grid}
+        self.R_neighbors = {cell: [neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid] for cell in self.grid}
+        self.B_neighbors = {cell: [neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid] for cell in self.grid}
         self.size: int = hex_size
         self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
         self.time: Time = time
@@ -44,7 +44,7 @@ class EngineDodo:
     @staticmethod
     def symetrical(dico):
         sym = tuple()
-        for cell in dico.keys():
+        for cell in dico:
             dist = abs(cell[0] - cell[1])
             if cell[0] < cell[1]:
                 sym += ((cell, dico[(cell[0]+dist, cell[1]-dist)]),)
@@ -72,40 +72,41 @@ class EngineDodo:
 
     @staticmethod
     def add_dicts(dict1, dict2, player: Player):
-        for key in dict2.keys():
+        for key in dict2:
             if dict2[key] == player:
                 dict1[key] += 1
 
     def generate_grid_heatmaps(self, nb_games: int):
-        self.grid_weights_R = copy.deepcopy(self.grid)
-        self.grid_weights_B = copy.deepcopy(self.grid)
-        for el in self.grid_weights_R.keys():
-            self.grid_weights_R[el] = 0
-            self.grid_weights_B[el] = 0
-
-        victory_count_r: int = 0
-        victory_count_b: int = 0
-
-        for _ in range(nb_games):
-            while True:
-                act: ActionDodo = random.choice(self.legals(R))
-                self.play(R, act)
-                if self.is_final(B):
-                    victory_count_b += 1
-                    self.add_dicts(self.grid_weights_B, self.grid, B)
-                    self.back_to_start_board()
-                    break
-                act = random.choice(self.legals(B))
-                self.play(B, act)
-                if self.is_final(R):
-                    victory_count_r += 1
-                    self.add_dicts(self.grid_weights_R, self.grid, R)
-                    self.back_to_start_board()
-                    break
-
-        for el in self.grid_weights_R:
-            self.grid_weights_R[el] /= victory_count_r
-            self.grid_weights_B[el] /= victory_count_b
+        self.grid_weights_R = {}
+        self.grid_weights_B = {}
+        for el in self.grid:
+            self.grid_weights_R[el] = 1 - (max(abs(el[0] - (self.size-1)), abs(el[1] - (self.size-1))) / (2*(self.size-1)))
+        #     self.grid_weights_R[el] = 0
+        #     self.grid_weights_B[el] = 0
+        #
+        # victory_count_r: int = 0
+        # victory_count_b: int = 0
+        #
+        # for _ in range(nb_games):
+        #     while True:
+        #         act: ActionDodo = random.choice(self.legals(R))
+        #         self.play(R, act)
+        #         if self.is_final(B):
+        #             victory_count_b += 1
+        #             self.add_dicts(self.grid_weights_B, self.grid, B)
+        #             self.back_to_start_board()
+        #             break
+        #         act = random.choice(self.legals(B))
+        #         self.play(B, act)
+        #         if self.is_final(R):
+        #             victory_count_r += 1
+        #             self.add_dicts(self.grid_weights_R, self.grid, R)
+        #             self.back_to_start_board()
+        #             break
+        #
+        # for el in self.grid_weights_R:
+        #     self.grid_weights_R[el] /= victory_count_r
+        #     self.grid_weights_B[el] /= victory_count_b
 
     def update_state(self, grid: State):
         """
@@ -128,18 +129,12 @@ class EngineDodo:
         if player == R:
             for box in self.R_hex:
                 for nghb in self.R_neighbors[box]:
-                    if (
-                        nghb in self.grid
-                        and self.grid[nghb] == 0
-                    ):
+                    if self.grid[nghb] == 0:
                         legals.append((box, nghb))
         elif player == B:
             for box in self.B_hex:
                 for nghb in self.B_neighbors[box]:
-                    if (
-                        nghb in self.grid.keys()
-                        and self.grid[nghb] == 0
-                    ):
+                    if self.grid[nghb] == 0:
                         legals.append((box, nghb))
 
         return legals
@@ -195,9 +190,9 @@ class EngineDodo:
     def neighbors(self, cell: Cell, player: Player) -> dict[Cell, Player]:
         neighbors: dict[Cell, Player] = {}
         if player == R:
-            neighbors = {nghb: self.grid[nghb] for nghb in self.R_neighbors[cell] if nghb in self.grid}
+            neighbors = {nghb: self.grid[nghb] for nghb in self.R_neighbors[cell]}
         if player == B:
-            neighbors = {nghb: self.grid[nghb] for nghb in self.B_neighbors[cell] if nghb in self.grid}
+            neighbors = {nghb: self.grid[nghb] for nghb in self.B_neighbors[cell]}
         return neighbors
 
     def nb_pins(self, player: Player) -> int:
@@ -213,9 +208,9 @@ class EngineDodo:
             if all(
                 neighbors.values()
             ):  # Si toutes les cases voisines sont occupées (c.-à-d. != 0)
-                for cell, value in neighbors.items():
+                for cell in neighbors:
                     if (
-                        value == opponent
+                        neighbors[cell] == opponent
                         and 0 in self.neighbors(cell, opponent).values()
                     ):
                         count += 1

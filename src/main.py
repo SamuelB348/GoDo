@@ -12,9 +12,12 @@ def main():
     ##########################
     # DODO
     ##########################
-    # d = EngineDodo(start_board_dodo(4), 4, 100)
+    d = EngineDodo(start_board_dodo(10), 10, 100)
+    d.generate_grid_heatmaps(10)
+    grid_heatmap_plot(d.grid_weights_R, 10)
+    # print(d.legals(R))
     # d.play(R, ((-3, 0), (-2, 1)))
-    #
+    # d.pplot()
     # print(d.legals(B))
     # d.play(B, ((0, 2), (-1, 1)))
     # d.pplot()
@@ -22,7 +25,7 @@ def main():
     # print(d.symetrical(d.grid))
     # d.pplot()
     #match(4, 100, 8.872642693757948, 0.8594601582455841, -2.6032144455777058, 8.6709186, 1.9808019, -2.61928918)
-    match_vsrandom(4, 4, -8.745262479285948, 2.2106489937139884, -9.061331443015954)
+    #match_vsrandom(5, 10, -8.745262479285948, 2.2106489937139884, -9.061331443015954)
     #tuning_dodo_v2(4, 10, 10000)
     #test_strategies(4, 100)
     ##########################

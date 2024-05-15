@@ -60,12 +60,12 @@ def grid_heatmap_plot(heatmap: dict[Cell, float], hex_size: int):
         )
 
         plt.gca().add_patch(polygon)
-        plt.text(
-            center.x,
-            center.y,
-            f"{count:.2f}",
-            horizontalalignment="right",
-        )
+        # plt.text(
+        #     center.x,
+        #     center.y,
+        #     f"{count:.2f}",
+        #     horizontalalignment="right",
+        # )
     plt.xlim(-2 * hex_size-1, 2 * hex_size+1)
     plt.ylim(-2 * hex_size-1, 2 * hex_size+1)
     plt.show()
