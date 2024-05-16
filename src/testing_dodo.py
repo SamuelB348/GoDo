@@ -218,7 +218,7 @@ def test_strategies(grid_size: int, nb_games: int):
 
 
 def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
-    best_coeffs = np.array((8.6709186, 1.9808019, -2.61928918))
+    best_coeffs = np.array((-3.22970786, 1.69112454, -1.18968059))
     list_best_coeff = []
     count = 0
     while True:
@@ -226,13 +226,13 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
         coeffs_a = tuple(np.add(deltas, best_coeffs))
         coeffs_b = tuple(np.add(-deltas, best_coeffs))
         results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_b[0], coeffs_b[1], coeffs_b[2])
-        if results[0] > 0.5*nb_games:  # coeffs_a ont gagné
+        if results[0] > 0.6*nb_games:  # coeffs_a ont gagné
             best_coeffs = np.add(best_coeffs, np.subtract(coeffs_a, best_coeffs)*factor)
-        else:
+        elif results[0] < 0.4*nb_games:
             best_coeffs = np.add(best_coeffs, np.subtract(coeffs_b, best_coeffs) * factor)
         print(best_coeffs)
         list_best_coeff.append(best_coeffs)
-        if count % 2 == 0:
+        if count % 10 == 0:
             plt.plot([coeff[0] for coeff in list_best_coeff])
             plt.plot([coeff[1] for coeff in list_best_coeff])
             plt.plot([coeff[2] for coeff in list_best_coeff])
@@ -241,7 +241,8 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def tuning_dodo_v2(grid_size: int, nb_games: int, nb_iter: int, a=0.01, c=0.05):
-    best_coeffs = np.array((-10.28453201, 3.12370101, -8.05037163))
+    # [-0.58409005 - 0.01139513 - 0.01492787]
+    best_coeffs = np.array((0, 0, 0))
     list_best_coeff = []
     count = 0
     alpha = 0.602

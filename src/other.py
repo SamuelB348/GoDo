@@ -150,3 +150,30 @@ def grid_heatmap_plot(heatmap: dict[Cell, float], hex_size: int):
 #                 nb += 1
 #         summed_list.append(count/nb)
 #     return summed_list
+
+#     self.grid_weights_R[el] = 0
+#     self.grid_weights_B[el] = 0
+#
+# victory_count_r: int = 0
+# victory_count_b: int = 0
+#
+# for _ in range(nb_games):
+#     while True:
+#         act: ActionDodo = random.choice(self.legals(R))
+#         self.play(R, act)
+#         if self.is_final(B):
+#             victory_count_b += 1
+#             self.add_dicts(self.grid_weights_B, self.grid, B)
+#             self.back_to_start_board()
+#             break
+#         act = random.choice(self.legals(B))
+#         self.play(B, act)
+#         if self.is_final(R):
+#             victory_count_r += 1
+#             self.add_dicts(self.grid_weights_R, self.grid, R)
+#             self.back_to_start_board()
+#             break
+#
+# for el in self.grid_weights_R:
+#     self.grid_weights_R[el] /= victory_count_r
+#     self.grid_weights_B[el] /= victory_count_b

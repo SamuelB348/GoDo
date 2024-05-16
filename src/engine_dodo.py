@@ -26,9 +26,9 @@ class EngineDodo:
         self.B_hex: set[Cell] = {
             hex_key for hex_key, player in self.grid.items() if player == B
         }
-
         self.R_neighbors = {cell: [neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid] for cell in self.grid}
         self.B_neighbors = {cell: [neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid] for cell in self.grid}
+
         self.size: int = hex_size
         self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
         self.time: Time = time
@@ -36,10 +36,13 @@ class EngineDodo:
         # Attributs pour la fonction d'évaluation
         self.grid_weights_R: Optional[dict[Cell, int | float]] = None
         self.grid_weights_B: Optional[dict[Cell, float]] = None
+
+        # Caches
         self.cache = {}
 
         # Attributs pour le debug
         self.position_explored: int = 0
+        self.terminal_node: int = 0
 
     @staticmethod
     def symetrical(dico):
@@ -76,37 +79,12 @@ class EngineDodo:
             if dict2[key] == player:
                 dict1[key] += 1
 
-    def generate_grid_heatmaps(self, nb_games: int):
+    def generate_grid_heatmaps(self):
         self.grid_weights_R = {}
         self.grid_weights_B = {}
         for el in self.grid:
-            self.grid_weights_R[el] = 1 - (max(abs(el[0] - (self.size-1)), abs(el[1] - (self.size-1))) / (2*(self.size-1)))
-        #     self.grid_weights_R[el] = 0
-        #     self.grid_weights_B[el] = 0
-        #
-        # victory_count_r: int = 0
-        # victory_count_b: int = 0
-        #
-        # for _ in range(nb_games):
-        #     while True:
-        #         act: ActionDodo = random.choice(self.legals(R))
-        #         self.play(R, act)
-        #         if self.is_final(B):
-        #             victory_count_b += 1
-        #             self.add_dicts(self.grid_weights_B, self.grid, B)
-        #             self.back_to_start_board()
-        #             break
-        #         act = random.choice(self.legals(B))
-        #         self.play(B, act)
-        #         if self.is_final(R):
-        #             victory_count_r += 1
-        #             self.add_dicts(self.grid_weights_R, self.grid, R)
-        #             self.back_to_start_board()
-        #             break
-        #
-        # for el in self.grid_weights_R:
-        #     self.grid_weights_R[el] /= victory_count_r
-        #     self.grid_weights_B[el] /= victory_count_b
+            self.grid_weights_R[el] = 1 - (max(abs(el[0] - (self.size - 1)), abs(el[1] - (self.size - 1))) / (2 * (self.size - 1)))
+            self.grid_weights_B[el] = 1 - (max(abs(el[0] + (self.size - 1)), abs(el[1] + (self.size - 1))) / (2 * (self.size - 1)))
 
     def update_state(self, grid: State):
         """
@@ -220,7 +198,7 @@ class EngineDodo:
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
 
-        state = tuple((key, value) for key, value in self.grid.items())
+        state = tuple(self.grid.items())
         if state in self.cache:
             return self.cache[state]
 
@@ -235,6 +213,7 @@ class EngineDodo:
         # Si un des deux joueurs gagne au prochain coup de manière certaine
         pins_r: int = self.nb_pins(R)
         pins_b: int = self.nb_pins(B)
+
         if player == R and nb_moves_b == 0 and pins_r == 0:
             return -10000
         if player == B and nb_moves_r == 0 and pins_b == 0:
@@ -294,7 +273,9 @@ class EngineDodo:
         """
 
         if depth == 0 or self.is_final(player):
+            self.terminal_node += 1
             return self.evaluate_v1(player, m, p, c)
+        self.position_explored += 1
         if player == R:
             best_value = float("-inf")
 
@@ -343,6 +324,8 @@ class EngineDodo:
             best_value = float("-inf")
             best_legals: list[ActionDodo] = []
             if len(legals) == 1:
+                self.terminal_node = 0
+                self.position_explored = 0
                 return best_value, legals
 
             for legal in legals:
@@ -355,6 +338,9 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
+            print(self.terminal_node, self.position_explored)
+            self.terminal_node = 0
+            self.position_explored = 0
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
@@ -372,6 +358,9 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
+            print(self.terminal_node, self.position_explored)
+            self.terminal_node = 0
+            self.position_explored = 0
             return best_value, best_legals
 
     def pplot(self):

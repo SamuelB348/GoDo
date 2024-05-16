@@ -12,9 +12,11 @@ def main():
     ##########################
     # DODO
     ##########################
-    d = EngineDodo(start_board_dodo(10), 10, 100)
-    d.generate_grid_heatmaps(10)
-    grid_heatmap_plot(d.grid_weights_R, 10)
+    # d = EngineDodo(start_board_dodo(10), 10, 100)
+    # d.generate_grid_heatmaps()
+    # print(d.evaluate_v1(B, 1, 1, 1))
+    # grid_heatmap_plot(d.grid_weights_R_dist, 10)
+    # grid_heatmap_plot(d.grid_weights_B_dist, 10)
     # print(d.legals(R))
     # d.play(R, ((-3, 0), (-2, 1)))
     # d.pplot()
@@ -24,10 +26,18 @@ def main():
     # print(d.neighbors((-2, 1), R))
     # print(d.symetrical(d.grid))
     # d.pplot()
-    #match(4, 100, 8.872642693757948, 0.8594601582455841, -2.6032144455777058, 8.6709186, 1.9808019, -2.61928918)
-    #match_vsrandom(5, 10, -8.745262479285948, 2.2106489937139884, -9.061331443015954)
-    #tuning_dodo_v2(4, 10, 10000)
+    #match(4, 100, -4.85615388, 0, -2.31248706, -4.85615388, 0.80023204, -2.31248706)
+    #match_vsrandom(4, 2, -8.745262479285948, 2.2106489937139884, -9.061331443015954)
+    #tuning_dodo(4, 10, 0.01)
+    # tuning_dodo_v2(6, 10, 10000)
     #test_strategies(4, 100)
+
+    dico = dict(start_board_dodo(4))
+    list_list = [list(el) for el in start_board_dodo(4)]
+    print(dico)
+    print(list_list)
+    for i in range(10000):
+        new = tuple(dico.items())
     ##########################
     # GOPHER
     ##########################

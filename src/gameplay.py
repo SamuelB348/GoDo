@@ -56,7 +56,7 @@ def initialize(
 ) -> Environment:
     if game.lower() == "dodo":
         env = EngineDodo(state, hex_size, 100)
-        env.generate_grid_heatmaps((3 * hex_size**2 - 3 * hex_size + 1) * 5)
+        env.generate_grid_heatmaps()
         return env
     elif game.lower() == "gopher":
         env = EngineGopher(state, hex_size, total_time)
@@ -128,8 +128,8 @@ def generic_strategy_dodo(
     if len(legals) == 1:
         return env, legals[0]
 
-    #depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 5000, 10)
-    depth = 3
+    depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 7000, 10)
+    # depth = 2
     list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
         player,
         depth,
