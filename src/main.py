@@ -32,12 +32,15 @@ def main():
     # tuning_dodo_v2(6, 10, 10000)
     #test_strategies(4, 100)
 
-    dico = dict(start_board_dodo(4))
-    list_list = [list(el) for el in start_board_dodo(4)]
-    print(dico)
-    print(list_list)
-    for i in range(10000):
-        new = tuple(dico.items())
+    # dico = dict(start_board_dodo(4))
+    # list_list = [list(el) for el in start_board_dodo(4)]
+    # print(dico)
+    # print(list_list)
+    # for i in range(10000):
+    #     new = tuple(dico.items())
+
+    for _ in range(100):
+        dodo(strategy_random, strategy_random, 4)
     ##########################
     # GOPHER
     ##########################
