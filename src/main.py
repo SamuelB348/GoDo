@@ -26,7 +26,7 @@ def main():
     # print(d.neighbors((-2, 1), R))
     # print(d.symetrical(d.grid))
     # d.pplot()
-    #match(4, 100, -4.85615388, 0, -2.31248706, -4.85615388, 0.80023204, -2.31248706)
+    match(5, 100, -4.85615388, 0, -2.31248706, -4.85615388, 0.80023204, -2.31248706)
     #match_vsrandom(4, 2, -8.745262479285948, 2.2106489937139884, -9.061331443015954)
     #tuning_dodo(4, 10, 0.01)
     # tuning_dodo_v2(6, 10, 10000)
@@ -39,8 +39,8 @@ def main():
     # for i in range(10000):
     #     new = tuple(dico.items())
 
-    for _ in range(100):
-        dodo(strategy_random, strategy_random, 4)
+    # for _ in range(100):
+    #     dodo(strategy_random, strategy_random, 4)
     ##########################
     # GOPHER
     ##########################

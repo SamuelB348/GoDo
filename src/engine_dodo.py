@@ -338,7 +338,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-            print(self.terminal_node, self.position_explored)
+
             self.terminal_node = 0
             self.position_explored = 0
             return best_value, best_legals
@@ -358,7 +358,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-            print(self.terminal_node, self.position_explored)
+
             self.terminal_node = 0
             self.position_explored = 0
             return best_value, best_legals
