@@ -194,6 +194,33 @@ class EngineDodo:
                         count += 1
         return count
 
+    def calculate_metrics(self):
+        legals_r: list[ActionDodo] = []
+        pins_r: float = 0.0
+        position_r: float = 0.0
+
+        legals_b: list[ActionDodo] = []
+        pins_b: float = 0.0
+        position_b: float = 0.0
+
+        for box in self.R_hex:
+            position_r += self.grid_weights_R[box]
+            for nghb in self.R_neighbors[box]:
+                if self.grid[nghb] == 0:
+                    legals_r.append((box, nghb))
+                elif self.grid[nghb] == B and 0 in self.neighbors(nghb, B).values():
+                    pins_r += 1
+
+        for box in self.B_hex:
+            position_b += self.grid_weights_B[box]
+            for nghb in self.B_neighbors[box]:
+                if self.grid[nghb] == 0:
+                    legals_b.append((box, nghb))
+                elif self.grid[nghb] == R and 0 in self.neighbors(nghb, R).values():
+                    pins_b += 1
+
+        return legals_r, pins_r, position_r, legals_b, pins_b, position_b
+
     def evaluate_v1(
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
@@ -202,8 +229,10 @@ class EngineDodo:
         if state in self.cache:
             return self.cache[state]
 
-        nb_moves_r: int = len(self.legals(R))
-        nb_moves_b: int = len(self.legals(B))
+        legals_r, pins_r, position_r, legals_b, pins_b, position_b = self.calculate_metrics()
+
+        nb_moves_r: int = len(legals_r)
+        nb_moves_b: int = len(legals_b)
         # Si un des deux joueurs gagne
         if player == R and nb_moves_r == 0:
             return 10000
@@ -211,8 +240,6 @@ class EngineDodo:
             return -10000
 
         # Si un des deux joueurs gagne au prochain coup de manière certaine
-        pins_r: int = self.nb_pins(R)
-        pins_b: int = self.nb_pins(B)
 
         if player == R and nb_moves_b == 0 and pins_r == 0:
             return -10000
@@ -226,9 +253,9 @@ class EngineDodo:
         mobility = (nb_moves_r - nb_moves_b) / (3*self.nb_checkers)
 
         # facteur position
-        assert self.grid_weights_R is not None and self.grid_weights_B is not None
-        position_r = sum(self.grid_weights_R[box] for box in self.R_hex)
-        position_b = sum(self.grid_weights_B[box] for box in self.B_hex)
+        # assert self.grid_weights_R is not None and self.grid_weights_B is not None
+        # position_r = sum(self.grid_weights_R[box] for box in self.R_hex)
+        # position_b = sum(self.grid_weights_B[box] for box in self.B_hex)
         position: float = (position_r - position_b) / self.nb_checkers
 
         # facteur contrôle
