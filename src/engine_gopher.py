@@ -68,28 +68,47 @@ class EngineGopher:
                     yield box, neighbor(box, player)
 
     def is_final(self, player: Player) -> bool:
-        pass
+        return len(self.legals(player)) == 0
 
     def play(self, player: Player, action: ActionGopher):
-        pass
+        self.grid[action] = player
+        self.update_sets(player, action)
 
     def undo(self, player: Player, action: ActionGopher):
-        pass
+        self.grid[action] = 0
+        self.reverse_update_sets(player, action)
 
     def update_sets(self, player: Player, action: ActionGopher):
         """
         Met à jour les sets R_hex et B_hex et Empty_hex après une action.
         """
-        pass
+        if player == R:
+            self.R_hex.add(action)
+        else:
+            self.B_hex.add(action)
+        self.Empty_hex.discard(action)
 
     def reverse_update_sets(self, player: Player, action: ActionGopher):
         """
         Met à jour les sets R_hex et B_hex et Empty_hex après un "undo".
         """
-        pass
+        if player == R:
+            self.R_hex.discard(action)
+        else:
+            self.B_hex.discard(action)
+        self.Empty_hex.add(action)
 
     def neighbors(self, cell: Cell, player: Player) -> dict[Cell, Player]:
-        pass
+        neighbors: dict[Cell, Player] = {}
+        if player == R:
+            for i in [0, 1, 2, 3, 4, 5]:
+                if neighbor(cell, i) in self.grid:
+                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+        if player == B:
+            for i in [0, 1, 2, 3, 4, 5]:
+                if neighbor(cell, i) in self.grid:
+                    neighbors[neighbor(cell, i)] = self.grid[neighbor(cell, i)]
+        return neighbors
 
     def evaluate_test(self, player: Player) -> Evaluation:
         pass
@@ -186,3 +205,4 @@ class EngineGopher:
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
+
