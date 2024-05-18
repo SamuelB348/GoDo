@@ -27,7 +27,7 @@ def main():
     # print(d.symetrical(d.grid))
     # d.pplot()
     match(4, 100, -5.52324828, 1.33774885, -1.21411309, -6.05022081, 1.50063963, -1.19807841)
-    # match_vsrandom(5, 10, -5.52324828, 1.33774885, -1.21411309)
+    #match_vsrandom(4, 10, -5.52324828, 1.33774885, -1.21411309)
     #tuning_dodo(4, 10, 0.01)
     # tuning_dodo_v2(6, 10, 10000)
     #test_strategies(4, 100)

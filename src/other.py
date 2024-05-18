@@ -177,3 +177,25 @@ def grid_heatmap_plot(heatmap: dict[Cell, float], hex_size: int):
 # for el in self.grid_weights_R:
 #     self.grid_weights_R[el] /= victory_count_r
 #     self.grid_weights_B[el] /= victory_count_b
+#
+#     def back_to_start_board(self):
+#         self.grid = {}
+#         n = self.size - 1
+#         for r in range(n, -n - 1, -1):
+#             q1 = max(-n, r - n)
+#             q2 = min(n, r + n)
+#             for q in range(q1, q2 + 1):
+#                 if -q > r + (self.size - 3):
+#                     self.grid[Cell(q, r)] = R
+#                 elif r > -q + (self.size - 3):
+#                     self.grid[Cell(q, r)] = B
+#                 else:
+#                     self.grid[Cell(q, r)] = 0
+#         self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
+#         self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
+#
+#     @staticmethod
+#     def add_dicts(dict1, dict2, player: Player):
+#         for key in dict2:
+#             if dict2[key] == player:
+#                 dict1[key] += 1

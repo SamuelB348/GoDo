@@ -19,6 +19,12 @@ Time = int
 
 class EngineDodo:
     def __init__(self, grid: State, hex_size: int, time: Time):
+        # Attributs généraux
+        self.size: int = hex_size
+        self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
+        self.time: Time = time
+
+        # Structures de données
         self.grid: dict[Cell, Player] = dict(grid)
         self.R_hex: set[Cell] = {
             hex_key for hex_key, player in self.grid.items() if player == R
@@ -26,16 +32,22 @@ class EngineDodo:
         self.B_hex: set[Cell] = {
             hex_key for hex_key, player in self.grid.items() if player == B
         }
-        self.R_neighbors = {cell: [neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid] for cell in self.grid}
-        self.B_neighbors = {cell: [neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid] for cell in self.grid}
-
-        self.size: int = hex_size
-        self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
-        self.time: Time = time
+        self.R_neighbors = {
+            cell: [
+                neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid
+            ]
+            for cell in self.grid
+        }
+        self.B_neighbors = {
+            cell: [
+                neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid
+            ]
+            for cell in self.grid
+        }
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R: Optional[dict[Cell, int | float]] = None
-        self.grid_weights_B: Optional[dict[Cell, float]] = None
+        self.grid_weights: dict[Cell, int | float] = self.generate_grid_heatmaps(R)
+        self.grid_weights_B: dict[Cell, int | float] = self.generate_grid_heatmaps(B)
 
         # Caches
         self.cache = {}
@@ -46,45 +58,31 @@ class EngineDodo:
 
     @staticmethod
     def symetrical(dico):
-        sym = tuple()
+        sym = []
         for cell in dico:
             dist = abs(cell[0] - cell[1])
             if cell[0] < cell[1]:
-                sym += ((cell, dico[(cell[0]+dist, cell[1]-dist)]),)
+                sym.append((cell, dico[(cell[0] + dist, cell[1] - dist)]))
             elif cell[0] > cell[1]:
-                sym += ((cell, dico[(cell[0]-dist, cell[1]+dist)]),)
+                sym.append((cell, dico[(cell[0] - dist, cell[1] + dist)]))
             else:
-                sym += ((cell, dico[cell]),)
-        return sym
+                sym.append((cell, dico[cell]))
+        return tuple(sym)
 
-    def back_to_start_board(self):
-        self.grid = {}
-        n = self.size - 1
-        for r in range(n, -n - 1, -1):
-            q1 = max(-n, r - n)
-            q2 = min(n, r + n)
-            for q in range(q1, q2 + 1):
-                if -q > r + (self.size - 3):
-                    self.grid[Cell(q, r)] = R
-                elif r > -q + (self.size - 3):
-                    self.grid[Cell(q, r)] = B
-                else:
-                    self.grid[Cell(q, r)] = 0
-        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
-
-    @staticmethod
-    def add_dicts(dict1, dict2, player: Player):
-        for key in dict2:
-            if dict2[key] == player:
-                dict1[key] += 1
-
-    def generate_grid_heatmaps(self):
-        self.grid_weights_R = {}
-        self.grid_weights_B = {}
+    def generate_grid_heatmaps(self, player: Player) -> dict[Cell, int | float]:
+        grid_weights: dict[Cell, int | float] = {}
         for el in self.grid:
-            self.grid_weights_R[el] = 1 - (max(abs(el[0] - (self.size - 1)), abs(el[1] - (self.size - 1))) / (2 * (self.size - 1)))
-            self.grid_weights_B[el] = 1 - (max(abs(el[0] + (self.size - 1)), abs(el[1] + (self.size - 1))) / (2 * (self.size - 1)))
+            if player == R:
+                grid_weights[el] = 1 - (
+                    max(abs(el[0] - (self.size - 1)), abs(el[1] - (self.size - 1)))
+                    / (2 * (self.size - 1))
+                )
+            else:
+                grid_weights[el] = 1 - (
+                    max(abs(el[0] + (self.size - 1)), abs(el[1] + (self.size - 1)))
+                    / (2 * (self.size - 1))
+                )
+        return grid_weights
 
     def update_state(self, grid: State):
         """
@@ -194,8 +192,10 @@ class EngineDodo:
                         count += 1
         return count
 
-    def calculate_metrics(self) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
-        assert self.grid_weights_R is not None and self.grid_weights_B is not None
+    def calculate_metrics(
+        self,
+    ) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
+        assert self.grid_weights is not None and self.grid_weights_B is not None
 
         legals_r: list[ActionDodo] = []
         pins_r: float = 0.0
@@ -206,11 +206,13 @@ class EngineDodo:
         position_b: float = 0.0
 
         for box in self.R_hex:
-            position_r += self.grid_weights_R[box]
+            position_r += self.grid_weights[box]
             for nghb in self.R_neighbors[box]:
                 if self.grid[nghb] == 0:
                     legals_r.append((box, nghb))
-                elif self.grid[nghb] == B and 0 in [self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]]:
+                elif self.grid[nghb] == B and 0 in [
+                    self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]
+                ]:
                     pins_r += 1
 
         for box in self.B_hex:
@@ -218,7 +220,9 @@ class EngineDodo:
             for nghb in self.B_neighbors[box]:
                 if self.grid[nghb] == 0:
                     legals_b.append((box, nghb))
-                elif self.grid[nghb] == R and 0 in [self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]]:
+                elif self.grid[nghb] == R and 0 in [
+                    self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]
+                ]:
                     pins_b += 1
 
         return legals_r, pins_r, position_r, legals_b, pins_b, position_b
@@ -231,7 +235,9 @@ class EngineDodo:
         if state in self.cache:
             return self.cache[state]
 
-        legals_r, pins_r, position_r, legals_b, pins_b, position_b = self.calculate_metrics()
+        legals_r, pins_r, position_r, legals_b, pins_b, position_b = (
+            self.calculate_metrics()
+        )
 
         nb_moves_r: int = len(legals_r)
         nb_moves_b: int = len(legals_b)
@@ -249,7 +255,7 @@ class EngineDodo:
             return 10000
 
         # facteur mobilité
-        mobility = (nb_moves_r - nb_moves_b) / (3*self.nb_checkers)
+        mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
 
         # facteur position
         position: float = (position_r - position_b) / self.nb_checkers
@@ -258,6 +264,7 @@ class EngineDodo:
         control = (pins_r - pins_b) / self.nb_checkers
 
         evaluation = m * mobility + p * position + c * control
+
         self.cache[state] = evaluation
         # sym = self.symetrical(self.grid)
         # self.cache[sym] = evaluation
@@ -281,7 +288,9 @@ class EngineDodo:
             d = log(nb) / (log(x) * log(y)) + 2
         return min(round(d), max_depth)
 
-    def simulate_random_games(self, state: State, player: Player, nb_games: int) -> float:
+    def simulate_random_games(
+        self, state: State, player: Player, nb_games: int
+    ) -> float:
         nb_victory: int = 0
         opponent: Player = B if player == B else R
         for _ in range(nb_games):
@@ -300,9 +309,11 @@ class EngineDodo:
                 self.play(player, act)
             self.update_state(state)
 
-        return nb_victory/nb_games
+        return nb_victory / nb_games
 
-    def order_moves(self, state: State, legals: list[ActionDodo], player: Player, nb_games: int):
+    def order_moves(
+        self, state: State, legals: list[ActionDodo], player: Player, nb_games: int
+    ):
         ordered_moves: dict[ActionDodo, float] = {}
 
         for move in legals:
@@ -311,7 +322,9 @@ class EngineDodo:
             if score >= 0.9:
                 return {move: 0.9}
             ordered_moves[move] = score
-        ordered_moves = dict(sorted(ordered_moves.items(), key=lambda item: item[1], reverse=True))
+        ordered_moves = dict(
+            sorted(ordered_moves.items(), key=lambda item: item[1], reverse=True)
+        )
         # self.pplot()
         # print(ordered_moves)
         return ordered_moves
