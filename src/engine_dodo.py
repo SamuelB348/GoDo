@@ -194,7 +194,9 @@ class EngineDodo:
                         count += 1
         return count
 
-    def calculate_metrics(self):
+    def calculate_metrics(self) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
+        assert self.grid_weights_R is not None and self.grid_weights_B is not None
+
         legals_r: list[ActionDodo] = []
         pins_r: float = 0.0
         position_r: float = 0.0
@@ -208,7 +210,7 @@ class EngineDodo:
             for nghb in self.R_neighbors[box]:
                 if self.grid[nghb] == 0:
                     legals_r.append((box, nghb))
-                elif self.grid[nghb] == B and 0 in self.neighbors(nghb, B).values():
+                elif self.grid[nghb] == B and 0 in [self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]]:
                     pins_r += 1
 
         for box in self.B_hex:
@@ -216,7 +218,7 @@ class EngineDodo:
             for nghb in self.B_neighbors[box]:
                 if self.grid[nghb] == 0:
                     legals_b.append((box, nghb))
-                elif self.grid[nghb] == R and 0 in self.neighbors(nghb, R).values():
+                elif self.grid[nghb] == R and 0 in [self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]]:
                     pins_b += 1
 
         return legals_r, pins_r, position_r, legals_b, pins_b, position_b
@@ -233,6 +235,7 @@ class EngineDodo:
 
         nb_moves_r: int = len(legals_r)
         nb_moves_b: int = len(legals_b)
+
         # Si un des deux joueurs gagne
         if player == R and nb_moves_r == 0:
             return 10000
@@ -240,22 +243,15 @@ class EngineDodo:
             return -10000
 
         # Si un des deux joueurs gagne au prochain coup de manière certaine
-
         if player == R and nb_moves_b == 0 and pins_r == 0:
             return -10000
         if player == B and nb_moves_r == 0 and pins_b == 0:
             return 10000
 
         # facteur mobilité
-        # mobility = (3 * self.nb_checkers) * (
-        #     1 / (nb_moves_r + 1) - 1 / (nb_moves_b + 1)
-        # )
         mobility = (nb_moves_r - nb_moves_b) / (3*self.nb_checkers)
 
         # facteur position
-        # assert self.grid_weights_R is not None and self.grid_weights_B is not None
-        # position_r = sum(self.grid_weights_R[box] for box in self.R_hex)
-        # position_b = sum(self.grid_weights_B[box] for box in self.B_hex)
         position: float = (position_r - position_b) / self.nb_checkers
 
         # facteur contrôle
@@ -284,6 +280,41 @@ class EngineDodo:
         else:
             d = log(nb) / (log(x) * log(y)) + 2
         return min(round(d), max_depth)
+
+    def simulate_random_games(self, state: State, player: Player, nb_games: int) -> float:
+        nb_victory: int = 0
+        opponent: Player = B if player == B else R
+        for _ in range(nb_games):
+            while True:
+                legals_opp = self.legals(opponent)
+                if len(legals_opp) == 0:
+                    break
+                act: ActionDodo = random.choice(legals_opp)
+                self.play(opponent, act)
+
+                legals_p = self.legals(player)
+                if len(legals_p) == 0:
+                    nb_victory += 1
+                    break
+                act = random.choice(legals_p)
+                self.play(player, act)
+            self.update_state(state)
+
+        return nb_victory/nb_games
+
+    def order_moves(self, state: State, legals: list[ActionDodo], player: Player, nb_games: int):
+        ordered_moves: dict[ActionDodo, float] = {}
+
+        for move in legals:
+            self.play(player, move)
+            score = self.simulate_random_games(state, player, nb_games)
+            if score >= 0.9:
+                return {move: 0.9}
+            ordered_moves[move] = score
+        ordered_moves = dict(sorted(ordered_moves.items(), key=lambda item: item[1], reverse=True))
+        # self.pplot()
+        # print(ordered_moves)
+        return ordered_moves
 
     def alphabeta_v1(
         self,
@@ -332,6 +363,7 @@ class EngineDodo:
 
     def alphabeta_actions_v1(
         self,
+        state: State,
         player: Player,
         depth: int,
         a: float,
@@ -347,6 +379,7 @@ class EngineDodo:
 
         if depth == 0 or len(legals) == 0:
             return self.evaluate_v1(player, m, p, c), []
+
         if player == R:
             best_value = float("-inf")
             best_legals: list[ActionDodo] = []
@@ -355,7 +388,9 @@ class EngineDodo:
                 self.position_explored = 0
                 return best_value, legals
 
-            for legal in legals:
+            ordered_legals = self.order_moves(state, legals, R, 10)
+
+            for legal in ordered_legals:
                 self.play(player, legal)
                 v = self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
                 self.undo(player, legal)
@@ -365,17 +400,20 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-
+            # print(self.terminal_node, self.position_explored)
             self.terminal_node = 0
             self.position_explored = 0
-            return best_value, best_legals
+
+            return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
             if len(legals) == 1:
                 return best_value, legals
 
-            for legal in legals:
+            ordered_legals = self.order_moves(state, legals, B, 10)
+
+            for legal in ordered_legals:
                 self.play(player, legal)
                 v = self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
                 self.undo(player, legal)
@@ -385,10 +423,11 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-
+            # print(self.terminal_node, self.position_explored)
             self.terminal_node = 0
             self.position_explored = 0
-            return best_value, best_legals
+
+            return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
 
     def pplot(self):
         """

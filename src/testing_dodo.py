@@ -86,7 +86,7 @@ def dodo_vsrandom(e: EngineDodo, m1: float, p1: float, c1: float, size: int, pla
         b.play(R, s[1])
         if b.is_final(B):
             print(B, end="")
-            b.pplot()
+            # b.pplot()
             return -1
         s = (
             generic_strategy_dodo(b, state_tmp, B, time_left, m1, p1, c1)
@@ -97,7 +97,7 @@ def dodo_vsrandom(e: EngineDodo, m1: float, p1: float, c1: float, size: int, pla
         b.play(B, s[1])
         if b.is_final(R):
             print(R, end="")
-            b.pplot()
+            # b.pplot()
             return 1
 
 
@@ -218,13 +218,24 @@ def test_strategies(grid_size: int, nb_games: int):
 
 
 def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
-    best_coeffs = np.array((-3.22970786, 1.69112454, -1.18968059))
+    best_coeffs = np.array((-100, 1.50063963, -1.19807841))
     list_best_coeff = []
     count = 0
     while True:
-        deltas = np.random.normal(0, 2, 3)
-        coeffs_a = tuple(np.add(deltas, best_coeffs))
-        coeffs_b = tuple(np.add(-deltas, best_coeffs))
+        deltas = np.random.normal(0, 5, 2)
+        deltas = np.insert(deltas, 0, 0)
+        coeffs_a = np.add(deltas, best_coeffs)
+        coeffs_b = np.add(-deltas, best_coeffs)
+
+        coeffs_a[1] = max(coeffs_a[1], 0)
+        coeffs_a[2] = min(coeffs_a[2], 0)
+
+        coeffs_b[1] = max(coeffs_b[1], 0)
+        coeffs_b[2] = min(coeffs_b[2], 0)
+
+        coeffs_a = tuple(coeffs_a)
+        coeffs_b = tuple(coeffs_b)
+
         results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_b[0], coeffs_b[1], coeffs_b[2])
         if results[0] > 0.6*nb_games:  # coeffs_a ont gagné
             best_coeffs = np.add(best_coeffs, np.subtract(coeffs_a, best_coeffs)*factor)
