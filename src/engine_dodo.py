@@ -46,7 +46,7 @@ class EngineDodo:
         }
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights: dict[Cell, int | float] = self.generate_grid_heatmaps(R)
+        self.grid_weights_R: dict[Cell, int | float] = self.generate_grid_heatmaps(R)
         self.grid_weights_B: dict[Cell, int | float] = self.generate_grid_heatmaps(B)
 
         # Caches
@@ -195,7 +195,7 @@ class EngineDodo:
     def calculate_metrics(
         self,
     ) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
-        assert self.grid_weights is not None and self.grid_weights_B is not None
+        assert self.grid_weights_R is not None and self.grid_weights_B is not None
 
         legals_r: list[ActionDodo] = []
         pins_r: float = 0.0
@@ -206,7 +206,7 @@ class EngineDodo:
         position_b: float = 0.0
 
         for box in self.R_hex:
-            position_r += self.grid_weights[box]
+            position_r += self.grid_weights_R[box]
             for nghb in self.R_neighbors[box]:
                 if self.grid[nghb] == 0:
                     legals_r.append((box, nghb))
@@ -401,9 +401,9 @@ class EngineDodo:
                 self.position_explored = 0
                 return best_value, legals
 
-            ordered_legals = self.order_moves(state, legals, R, 10)
+            # ordered_legals = self.order_moves(state, legals, R, 10)
 
-            for legal in ordered_legals:
+            for legal in legals:
                 self.play(player, legal)
                 v = self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
                 self.undo(player, legal)
@@ -417,16 +417,16 @@ class EngineDodo:
             self.terminal_node = 0
             self.position_explored = 0
 
-            return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
+            return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
             if len(legals) == 1:
                 return best_value, legals
 
-            ordered_legals = self.order_moves(state, legals, B, 10)
+            # ordered_legals = self.order_moves(state, legals, B, 10)
 
-            for legal in ordered_legals:
+            for legal in legals:
                 self.play(player, legal)
                 v = self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
                 self.undo(player, legal)
@@ -440,7 +440,9 @@ class EngineDodo:
             self.terminal_node = 0
             self.position_explored = 0
 
-            return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
+            # return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
+            return best_value, best_legals
+
 
     def pplot(self):
         """
