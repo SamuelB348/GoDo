@@ -120,15 +120,17 @@ def generic_strategy_dodo(
 ) -> tuple[Environment, Action]:
     env.update_state(state)
 
-    opponent: int = R if player == B else B
+    opponent: Player = R if player == B else B
     legals = env.legals(player)
     legals_opp = env.legals(opponent)
 
     if len(legals) == 1:
         return env, legals[0]
 
-    # depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 20000, 14)
-    depth = 2
+    depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 1000000, 12)
+    # depth = env.adaptable_depth_v1(len(legals), 8, 3, 7)
+
+    # depth = 2
     list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
         state,
         player,
@@ -141,10 +143,10 @@ def generic_strategy_dodo(
         c,
     )[1]
 
-    for action in list_moves:
-        if player == R and hex_sub(action[1], action[0]) == hex_directions[2]:
-            return env, action
-        if player == B and hex_sub(action[1], action[0]) == hex_directions[5]:
-            return env, action
+    # for action in list_moves:
+    #     if player == R and hex_sub(action[1], action[0]) == hex_directions[2]:
+    #         return env, action
+    #     if player == B and hex_sub(action[1], action[0]) == hex_directions[5]:
+    #         return env, action
 
-    return env, list_moves[0]
+    return env, random.choice(list_moves)

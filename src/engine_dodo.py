@@ -1,11 +1,12 @@
-import copy
 import random
-from typing import Optional
+from functools import cached_property
 from math import exp, log
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from hex_tools import *
 
+
+# ------------- Alias de types et constantes pour communiquer avec l'arbitre ------------- #
 
 ActionDodo = tuple[Cell, Cell]
 Player = int
@@ -17,153 +18,231 @@ Evaluation = float
 Time = int
 
 
+# -------------------------- Autres alias de types et constantes ------------------------- #
+
+Grid = dict[Cell, Player]
+CheckerSet = set[Cell]
+Neighbors = dict[Cell, list[Cell]]
+GridWeights = dict[Cell, float]
+Hash = int
+Cache = dict[tuple[Hash, Player], Evaluation]
+Depth = int
+
+
 class EngineDodo:
+    """
+    Environnement de jeu principal, qui contient tous les algorithmes, méthodes,
+    structures, cache, etc. pour faire fonctionner l'IA.
+    """
+
     def __init__(self, grid: State, hex_size: int, time: Time):
+
         # Attributs généraux
         self.size: int = hex_size
-        self.nb_checkers: int = ((self.size + 1) * self.size) // 2 + (self.size - 1)
         self.time: Time = time
 
         # Structures de données
-        self.grid: dict[Cell, Player] = dict(grid)
-        self.R_hex: set[Cell] = {
-            hex_key for hex_key, player in self.grid.items() if player == R
+        self.grid: Grid = dict(grid)
+        self.R_cell: CheckerSet = {
+            cell for cell, player in self.grid.items() if player == R
         }
-        self.B_hex: set[Cell] = {
-            hex_key for hex_key, player in self.grid.items() if player == B
+        self.B_cell: CheckerSet = {
+            cell for cell, player in self.grid.items() if player == B
         }
-        self.R_neighbors = {
-            cell: [
-                neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid
-            ]
-            for cell in self.grid
+        self.R_neighbors: Neighbors = {
+            cell: [neighbor(cell, i) for i in [1, 2, 3] if neighbor(cell, i) in self.grid] for cell in self.grid
         }
-        self.B_neighbors = {
-            cell: [
-                neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid
-            ]
-            for cell in self.grid
+        self.B_neighbors: Neighbors = {
+            cell: [neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid] for cell in self.grid
         }
 
         # Attributs pour la fonction d'évaluation
-        self.grid_weights_R: dict[Cell, int | float] = self.generate_grid_heatmaps(R)
-        self.grid_weights_B: dict[Cell, int | float] = self.generate_grid_heatmaps(B)
+        self.grid_weights_R: GridWeights = self.generate_grid_heatmaps(R)
+        self.grid_weights_B: GridWeights = self.generate_grid_heatmaps(B)
 
-        # Caches
-        self.cache = {}
+        # Attributs pour les caches
+        self.cache: Cache = {}
+        self.sorted_keys = {key: tuple(sorted(key)) for key in self.grid}
 
         # Attributs pour le debug
         self.position_explored: int = 0
         self.terminal_node: int = 0
+        self.state_stack: list[Grid] = []
+
+    @cached_property
+    def nb_checkers(self) -> int:
+        """
+        Le nombre de pions est constant le long de la partie (pas de prises)
+        mais dépend de la taille de la grille.
+        Par conséquent, il n'a besoin d'être calculé qu'une fois (→ cached_property)
+        et sera utilisé le reste du temps comme un attribut normal.
+
+        :return: Le nombre de pions possédés par chaque joueur
+        """
+
+        return ((self.size + 1) * self.size) // 2 + (self.size - 1)
 
     @staticmethod
     def symetrical(dico):
+        """
+        Le symétrique d'un état du jeu correspond au dictionnaire où la clé key de type Cell
+        reçoit les valeurs de la clé (key[1], key[0]).
+
+        :param dico: Un dictionnaire de type Grid, qui représente un état de jeu.
+        :return: Le dictionnaire symétrique de type Grid.
+        """
+
         sym = []
         for cell in dico:
-            dist = abs(cell[0] - cell[1])
-            if cell[0] < cell[1]:
-                sym.append((cell, dico[(cell[0] + dist, cell[1] - dist)]))
-            elif cell[0] > cell[1]:
-                sym.append((cell, dico[(cell[0] - dist, cell[1] + dist)]))
-            else:
-                sym.append((cell, dico[cell]))
+            sym.append((cell, dico[(cell[1], cell[0])]))
         return tuple(sym)
 
-    def generate_grid_heatmaps(self, player: Player) -> dict[Cell, int | float]:
-        grid_weights: dict[Cell, int | float] = {}
-        for el in self.grid:
+    def grid_hash(self) -> Hash:
+        """
+
+        :return: Le hash (censé être invariant aux symmétries) de self.grid.
+        """
+
+        hash_list: list[tuple[Cell, tuple[Player, Player]]] = [
+            (key, (self.grid[key], self.grid[(key[1], key[0])]))
+            for key in self.sorted_keys
+        ]
+        return hash(tuple(hash_list))
+
+    def generate_grid_heatmaps(self, player: Player) -> GridWeights:
+        """
+        Calcule, pour chaque case de la grille, le nombre minimal de case à traverser
+        pour atteindre la case la plus éloignée de la grille du point de vue de 'player'.
+
+        :param player: Un joueur (R ou B).
+        :return: La grille des poids associés à chaque case.
+        """
+
+        grid_weights: GridWeights = {}
+        for cell in self.grid:
             if player == R:
-                grid_weights[el] = 1 - (
-                    max(abs(el[0] - (self.size - 1)), abs(el[1] - (self.size - 1)))
+                grid_weights[cell] = 1 - (
+                    max(abs(cell[0] - (self.size - 1)), abs(cell[1] - (self.size - 1)))
                     / (2 * (self.size - 1))
                 )
             else:
-                grid_weights[el] = 1 - (
-                    max(abs(el[0] + (self.size - 1)), abs(el[1] + (self.size - 1)))
+                grid_weights[cell] = 1 - (
+                    max(abs(cell[0] + (self.size - 1)), abs(cell[1] + (self.size - 1)))
                     / (2 * (self.size - 1))
                 )
         return grid_weights
 
-    def update_state(self, grid: State):
+    def update_state(self, state: State) -> None:
         """
-        Remet à jour les dictionnaires quand on reçoit un nouveau "state" de l'arbitre
+        Remet à jour self.grid et les sets R_cell et B_cell quand on reçoit
+        un nouveau "state" de l'arbitre.
+
+        :param state: Un 'state' de type State reçu de l'arbitre.
+        :return: None
         """
 
-        self.grid = dict(grid)
-        self.R_hex = {hex_key for hex_key, player in self.grid.items() if player == R}
-        self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
+        self.grid = dict(state)
+        self.R_cell = {hex_key for hex_key, player in self.grid.items() if player == R}
+        self.B_cell = {hex_key for hex_key, player in self.grid.items() if player == B}
 
     def legals(self, player: Player) -> list[ActionDodo]:
         """
-        Retourne les coups légaux du joueur en paramètre
+        Retourne les coups légaux du joueur en paramètre. La méthode s'appuie sur les sets R_cell ou B_cell
+        pour itérer uniquement usr les cases du joueur.
 
-        La méthode s'appuie sur les sets red_hex ou blue_hex pour gagner du temps plutôt que d'itérer
-        sur toutes les cases du plateau.
+        :param player: Le joueur dont on calcule les coups légaux.
+        :return: Une liste de coups légaux (de type ActionDodo : tuple[Cell, Cell])
         """
 
         legals: list[ActionDodo] = []
         if player == R:
-            for box in self.R_hex:
-                for nghb in self.R_neighbors[box]:
+            for cell in self.R_cell:
+                for nghb in self.R_neighbors[cell]:
                     if self.grid[nghb] == 0:
-                        legals.append((box, nghb))
+                        legals.append((cell, nghb))
         elif player == B:
-            for box in self.B_hex:
-                for nghb in self.B_neighbors[box]:
+            for cell in self.B_cell:
+                for nghb in self.B_neighbors[cell]:
                     if self.grid[nghb] == 0:
-                        legals.append((box, nghb))
+                        legals.append((cell, nghb))
 
         return legals
 
     def is_final(self, player: Player) -> bool:
+        """
+        Méthode pour savoir si le joueur 'player' a gagné.
+
+        :param player: Un joueur (R ou B).
+        :return: Un booléen ("a gagné" ou "n'a pas gagné").
+        """
+
         return len(self.legals(player)) == 0
 
-    def play(self, player: Player, action: ActionDodo):
+    def play(self, player: Player, action: ActionDodo) -> None:
         """
-        Joue une action légale et modifie les attributs.
+        Joue une action légale et modifie les attributs grid, R_cell et B_cell.
 
-        Il faut à la fois modifier le dictionnaire de toutes les cases (grid) et les sets des cases de
-        chaque joueur (red_hex et blue_hex).
+        :param player: Le joueur qui joue l'action.
+        :param action: L'action de type ActionDodo qui est jouée.
+        :return: None
         """
 
         self.grid[action[0]] = 0
         self.grid[action[1]] = player
         self.update_sets(player, action)
 
-    def undo(self, player: Player, action: ActionDodo):
+    def undo(self, player: Player, action: ActionDodo) -> None:
         """
         Inverse de la méthode play.
+
+        :param player: Le joueur qui 'déjoue' l'action.
+        :param action: L'action de type ActionDodo qui est 'déjouée'.
         """
 
         self.grid[action[0]] = player
         self.grid[action[1]] = 0
         self.reverse_update_sets(player, action)
 
-    def update_sets(self, player: Player, action: ActionDodo):
+    def update_sets(self, player: Player, action: ActionDodo) -> None:
         """
-        Met à jour les sets red_hex et blue_hex après une action.
+        Met à jour les sets R_cell et B_cell après une action.
+
+        :param player: Le joueur qui joue l'action.
+        :param action: L'action de type ActionDodo qui est jouée.
         """
 
         if player == R:
-            self.R_hex.discard(action[0])
-            self.R_hex.add(action[1])
+            self.R_cell.discard(action[0])
+            self.R_cell.add(action[1])
         else:
-            self.B_hex.discard(action[0])
-            self.B_hex.add(action[1])
+            self.B_cell.discard(action[0])
+            self.B_cell.add(action[1])
 
-    def reverse_update_sets(self, player: Player, action: ActionDodo):
+    def reverse_update_sets(self, player: Player, action: ActionDodo) -> None:
         """
-        Met à jour les sets red_hex et blue_hex après un "undo".
+        Met à jour les sets R_cell et B_cell après un 'undo'.
+
+        :param player: Le joueur qui 'déjoue' l'action.
+        :param action: L'action de type ActionDodo qui est 'déjouée'.
         """
 
         if player == R:
-            self.R_hex.discard(action[1])
-            self.R_hex.add(action[0])
+            self.R_cell.discard(action[1])
+            self.R_cell.add(action[0])
         else:
-            self.B_hex.remove(action[1])
-            self.B_hex.add(action[0])
+            self.B_cell.remove(action[1])
+            self.B_cell.add(action[0])
 
     def neighbors(self, cell: Cell, player: Player) -> dict[Cell, Player]:
+        """
+        Calcule l'ensemble des voisins (existants) d'une case selon la perspective du joueur 'player', ainsi
+        que les joueurs qui sont présents sur ces cases.
+
+        :param cell: La case dont on veut connaître les voisins.
+        :param player: La perspective selon laquelle on veut connaître les voisins (celle de R ou B)
+        :return: Un dictionnaire contenant les voisins de la case et les joueurs qui sont dessus.
+        """
+
         neighbors: dict[Cell, Player] = {}
         if player == R:
             neighbors = {nghb: self.grid[nghb] for nghb in self.R_neighbors[cell]}
@@ -173,21 +252,24 @@ class EngineDodo:
 
     def nb_pins(self, player: Player) -> int:
         """
-        Retourne le nombre de fois où player est bloqué c.-à-d. qu'il ne peut pas bouger,
-        sauf si un jeton voisin appartenant au joueur adverse bouge
+        Retourne le nombre de fois où 'player' est bloqué c.-à-d. qu'il ne peut pas bouger,
+        sauf si un jeton voisin appartenant au joueur adverse bouge.
+
+        :param player: Un joueur (R ou B).
+        :return: Nombre de blocages ('pins') du joueur.
         """
 
         count: int = 0
         opponent = R if player == B else B
-        for box in self.R_hex if player == R else self.B_hex:
-            neighbors = self.neighbors(box, player)
+        for cell in self.R_cell if player == R else self.B_cell:
+            neighbors = self.neighbors(cell, player)
             if all(
                 neighbors.values()
             ):  # Si toutes les cases voisines sont occupées (c.-à-d. != 0)
-                for cell in neighbors:
+                for nghb in neighbors:
                     if (
-                        neighbors[cell] == opponent
-                        and 0 in self.neighbors(cell, opponent).values()
+                        neighbors[nghb] == opponent
+                        and 0 in self.neighbors(nghb, opponent).values()
                     ):
                         count += 1
         return count
@@ -195,7 +277,6 @@ class EngineDodo:
     def calculate_metrics(
         self,
     ) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
-        assert self.grid_weights_R is not None and self.grid_weights_B is not None
 
         legals_r: list[ActionDodo] = []
         pins_r: float = 0.0
@@ -205,21 +286,21 @@ class EngineDodo:
         pins_b: float = 0.0
         position_b: float = 0.0
 
-        for box in self.R_hex:
-            position_r += self.grid_weights_R[box]
-            for nghb in self.R_neighbors[box]:
+        for cell in self.R_cell:
+            position_r += self.grid_weights_R[cell]
+            for nghb in self.R_neighbors[cell]:
                 if self.grid[nghb] == 0:
-                    legals_r.append((box, nghb))
+                    legals_r.append((cell, nghb))
                 elif self.grid[nghb] == B and 0 in [
                     self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]
                 ]:
                     pins_r += 1
 
-        for box in self.B_hex:
-            position_b += self.grid_weights_B[box]
-            for nghb in self.B_neighbors[box]:
+        for cell in self.B_cell:
+            position_b += self.grid_weights_B[cell]
+            for nghb in self.B_neighbors[cell]:
                 if self.grid[nghb] == 0:
-                    legals_b.append((box, nghb))
+                    legals_b.append((cell, nghb))
                 elif self.grid[nghb] == R and 0 in [
                     self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]
                 ]:
@@ -231,9 +312,10 @@ class EngineDodo:
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
 
-        state = tuple(self.grid.items())
-        if state in self.cache:
-            return self.cache[state]
+        # state = tuple(self.grid.items())
+        state: Hash = self.grid_hash()
+        if (state, player) in self.cache:
+            return self.cache[(state, player)]
 
         legals_r, pins_r, position_r, legals_b, pins_b, position_b = (
             self.calculate_metrics()
@@ -244,48 +326,50 @@ class EngineDodo:
 
         # Si un des deux joueurs gagne
         if player == R and nb_moves_r == 0:
+            self.cache[(state, player)] = 10000
             return 10000
         if player == B and nb_moves_b == 0:
+            self.cache[(state, player)] = -10000
             return -10000
 
         # Si un des deux joueurs gagne au prochain coup de manière certaine
-        if player == R and nb_moves_b == 0 and pins_r == 0:
+        if player == R and nb_moves_b == 0 and pins_b == 0:
+            self.cache[(state, player)] = -10000
             return -10000
-        if player == B and nb_moves_r == 0 and pins_b == 0:
+        if player == B and nb_moves_r == 0 and pins_r == 0:
+            self.cache[(state, player)] = 10000
             return 10000
 
-        # facteur mobilité
+        # Facteur "mobilité"
         mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
-
-        # facteur position
+        # Facteur "position"
         position: float = (position_r - position_b) / self.nb_checkers
-
-        # facteur contrôle
+        # Facteur "contrôle"
         control = (pins_r - pins_b) / self.nb_checkers
 
+        # Combinaison linéaire des différents facteurs
         evaluation = m * mobility + p * position + c * control
 
-        self.cache[state] = evaluation
-        # sym = self.symetrical(self.grid)
-        # self.cache[sym] = evaluation
-        # combinaison linéaire des différents facteurs
+        # Mise en cache
+        self.cache[(state, player)] = evaluation
+
         return evaluation
 
     @staticmethod
     def adaptable_depth_v1(
-        x: int, upper_bound: int, lower_bound: int, critical_point: int
-    ) -> int:
+        x: int, upper_bound: int, lower_bound: int, inflexion_point: int
+    ) -> Depth:
         d = upper_bound - (
-            (upper_bound - lower_bound) / (1 + exp(-(x - critical_point)))
+            (upper_bound - lower_bound) / (1 + exp(-(x - inflexion_point)))
         )
         return round(d)
 
     @staticmethod
-    def adaptable_depth_v2(x: int, y: int, nb: int, max_depth: int) -> int:
+    def adaptable_depth_v2(x: int, y: int, bound: int, max_depth: Depth) -> Depth:
         if y in (0, 1):
-            d = log(nb) / (log(x) * log(2)) + 2
+            d = log(bound) / (log(x) * log(2)) + 2
         else:
-            d = log(nb) / (log(x) * log(y)) + 2
+            d = log(bound) / (log(x) * log(y)) + 2
         return min(round(d), max_depth)
 
     def simulate_random_games(
@@ -346,6 +430,7 @@ class EngineDodo:
         if depth == 0 or self.is_final(player):
             self.terminal_node += 1
             return self.evaluate_v1(player, m, p, c)
+
         self.position_explored += 1
         if player == R:
             best_value = float("-inf")
@@ -359,6 +444,7 @@ class EngineDodo:
                 a = max(a, best_value)
                 if a >= b:
                     break  # β cut-off
+
             return best_value
         else:
             best_value = float("inf")
@@ -372,6 +458,7 @@ class EngineDodo:
                 b = min(b, best_value)
                 if a >= b:
                     break  # α cut-off
+
             return best_value
 
     def alphabeta_actions_v1(
@@ -401,8 +488,6 @@ class EngineDodo:
                 self.position_explored = 0
                 return best_value, legals
 
-            # ordered_legals = self.order_moves(state, legals, R, 10)
-
             for legal in legals:
                 self.play(player, legal)
                 v = self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
@@ -413,7 +498,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-            # print(self.terminal_node, self.position_explored)
+
             self.terminal_node = 0
             self.position_explored = 0
 
@@ -423,8 +508,6 @@ class EngineDodo:
             best_legals = []
             if len(legals) == 1:
                 return best_value, legals
-
-            # ordered_legals = self.order_moves(state, legals, B, 10)
 
             for legal in legals:
                 self.play(player, legal)
@@ -436,15 +519,13 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-            # print(self.terminal_node, self.position_explored)
+
             self.terminal_node = 0
             self.position_explored = 0
 
-            # return best_value, sorted(best_legals, key=lambda x: ordered_legals.get(x))
             return best_value, best_legals
 
-
-    def pplot(self):
+    def pplot(self, grid):
         """
         Produit un affichage graphique de la grille de jeu actuelle.
         """
@@ -452,7 +533,7 @@ class EngineDodo:
         plt.figure(figsize=(10, 10))
         layout = Layout(layout_flat, Point(1, -1), Point(0, 0))
 
-        for box, color in self.grid.items():
+        for box, player in grid.items():
             corners = polygon_corners(layout, box)
             center = hex_to_pixel(layout, box)
 
@@ -461,33 +542,22 @@ class EngineDodo:
             list_edges_y = [corner.y for corner in corners]
             list_edges_x.append(list_edges_x[0])
             list_edges_y.append(list_edges_y[0])
-            if color == 1:
-                polygon = Polygon(
-                    corners,
-                    closed=True,
-                    edgecolor="k",
-                    facecolor="red",
-                    alpha=0.8,
-                    linewidth=2,
-                )
-            elif color == 2:
-                polygon = Polygon(
-                    corners,
-                    closed=True,
-                    edgecolor="k",
-                    facecolor="blue",
-                    alpha=0.8,
-                    linewidth=2,
-                )
+            if player == 1:
+                color = "red"
+            elif player == 2:
+                color = "blue"
             else:
-                polygon = Polygon(
-                    corners,
-                    closed=True,
-                    edgecolor="k",
-                    facecolor="none",
-                    alpha=0.8,
-                    linewidth=2,
-                )
+                color = "none"
+
+            polygon = Polygon(
+                corners,
+                closed=True,
+                edgecolor="k",
+                facecolor=color,
+                alpha=0.8,
+                linewidth=2,
+            )
+
             plt.gca().add_patch(polygon)
             plt.text(
                 center.x,
