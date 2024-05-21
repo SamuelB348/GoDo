@@ -105,7 +105,7 @@ def strategy_brain_gopher(
 def strategy_random(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
-    env.update_state(state)
+    # env.update_state(state)
     return env, random.choice(env.legals(player))
 
 
@@ -127,10 +127,10 @@ def generic_strategy_dodo(
     if len(legals) == 1:
         return env, legals[0]
 
-    depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 1000000, 12)
+    # depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 1000000, 12)
     # depth = env.adaptable_depth_v1(len(legals), 8, 3, 7)
 
-    # depth = 2
+    depth = 2
     list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
         state,
         player,

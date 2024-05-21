@@ -1,5 +1,6 @@
 import random
 from functools import cached_property
+from typing import Union
 from math import exp, log
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -25,7 +26,7 @@ CheckerSet = set[Cell]
 Neighbors = dict[Cell, list[Cell]]
 GridWeights = dict[Cell, float]
 Hash = int
-Cache = dict[tuple[Hash, Player], Evaluation]
+Cache = Union[dict[tuple[Hash, Player], Evaluation], dict[tuple[tuple[Cell, Player]], Evaluation]]
 Depth = int
 
 
@@ -37,11 +38,13 @@ class EngineDodo:
 
     def __init__(self, grid: State, hex_size: int, time: Time):
 
-        # Attributs généraux
+        # --------- Attributs généraux --------- #
+
         self.size: int = hex_size
         self.time: Time = time
 
-        # Structures de données
+        # --------- Structures de données --------- #
+
         self.grid: Grid = dict(grid)
         self.R_cell: CheckerSet = {
             cell for cell, player in self.grid.items() if player == R
@@ -56,15 +59,18 @@ class EngineDodo:
             cell: [neighbor(cell, i) for i in [0, 4, 5] if neighbor(cell, i) in self.grid] for cell in self.grid
         }
 
-        # Attributs pour la fonction d'évaluation
+        # --------- Attributs pour la fonction d'évaluation --------- #
+
         self.grid_weights_R: GridWeights = self.generate_grid_heatmaps(R)
         self.grid_weights_B: GridWeights = self.generate_grid_heatmaps(B)
 
-        # Attributs pour les caches
+        # --------- Attributs pour les caches --------- #
+
         self.cache: Cache = {}
         self.sorted_keys = {key: tuple(sorted(key)) for key in self.grid}
 
-        # Attributs pour le debug
+        # --------- Attributs pour le debug --------- #
+
         self.position_explored: int = 0
         self.terminal_node: int = 0
         self.state_stack: list[Grid] = []
@@ -155,16 +161,10 @@ class EngineDodo:
         """
 
         legals: list[ActionDodo] = []
-        if player == R:
-            for cell in self.R_cell:
-                for nghb in self.R_neighbors[cell]:
-                    if self.grid[nghb] == 0:
-                        legals.append((cell, nghb))
-        elif player == B:
-            for cell in self.B_cell:
-                for nghb in self.B_neighbors[cell]:
-                    if self.grid[nghb] == 0:
-                        legals.append((cell, nghb))
+        for cell in self.R_cell if player == R else self.B_cell:
+            for nghb in self.R_neighbors[cell] if player == R else self.B_neighbors[cell]:
+                if self.grid[nghb] == 0:
+                    legals.append((cell, nghb))
 
         return legals
 
@@ -312,8 +312,8 @@ class EngineDodo:
         self, player: Player, m: float = 0, p: float = 0, c: float = 0
     ) -> Evaluation:
 
-        # state = tuple(self.grid.items())
-        state: Hash = self.grid_hash()
+        state = tuple(self.grid.items())
+        # state: Hash = self.grid_hash()
         if (state, player) in self.cache:
             return self.cache[(state, player)]
 

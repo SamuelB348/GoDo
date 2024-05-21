@@ -26,7 +26,7 @@ def dodo(
     b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
-        new_state_dodo(state_tmp, s[1], R)
+        # new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         if debug:
             b.pplot(b.grid)
@@ -34,7 +34,7 @@ def dodo(
             # b.pplot(b.grid)
             return -1
         s = strategy_bleu(b, state_tmp, B, time_left)
-        new_state_dodo(state_tmp, s[1], B)
+        # new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
         if debug:
             b.pplot(b.grid)

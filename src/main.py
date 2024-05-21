@@ -43,7 +43,7 @@ def main():
     # print(d.neighbors((-2, 1), R))
     # print(d.symetrical(d.grid))
     # d.pplot()
-    # match(4, 100, -5.52324828, 1.33774885, -1.21411309, -16.65091422, 8.74257623, -7.67015625)
+    match(4, 100, -5.52324828, 1.33774885, -1.21411309, -16.65091422, 8.74257623, -7.67015625)
     # match_vsrandom(4, 100, -3.1584889, 1.26463952, -1.02441619)
     # tuning_dodo(4, 10, 0.01)
     # tuning_dodo_v2(6, 10, 10000)
@@ -63,8 +63,8 @@ def main():
     # dodo_vsbrain(-5.52324828, 1.33774885, -1.21411309, 4, R)
 
     # print(d.hash_dict())
-    for _ in range(10):
-        dodo(strategy_random, strategy_random, 10)
+    # for _ in range(10):
+    #     dodo(strategy_random, strategy_random, 10)
     ##########################
     # GOPHER
     ##########################
