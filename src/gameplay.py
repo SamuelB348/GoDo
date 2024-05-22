@@ -115,7 +115,8 @@ def generic_strategy_dodo(
     player: Player,
     time_left: Time,
     m: float,
-    p: float,
+    pc: float,
+    pf: float,
     c: float,
 ) -> tuple[Environment, Action]:
     env.update_state(state)
@@ -127,21 +128,33 @@ def generic_strategy_dodo(
     if len(legals) == 1:
         return env, legals[0]
 
-    # depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 1000000, 12)
+    # depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 10000, 12) + 1
     # depth = env.adaptable_depth_v1(len(legals), 8, 3, 7)
 
-    depth = 2
-    list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
-        state,
+    # depth = 3
+    # list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
+    #     player,
+    #     depth,
+    #     float("-inf"),
+    #     float("inf"),
+    #     legals,
+    #     m,
+    #     pc,
+    #     pf,
+    #     c,
+    # )[1]
+
+    list_moves: list[ActionDodo] = env.iterative_deepening(
+        16,
+        1,
         player,
-        depth,
-        float("-inf"),
-        float("inf"),
         legals,
         m,
-        p,
+        pc,
+        pf,
         c,
     )[1]
+
 
     # for action in list_moves:
     #     if player == R and hex_sub(action[1], action[0]) == hex_directions[2]:

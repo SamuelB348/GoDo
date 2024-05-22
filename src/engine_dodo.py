@@ -1,4 +1,5 @@
 import random
+import time
 from functools import cached_property
 from typing import Union
 from math import exp, log
@@ -26,7 +27,8 @@ CheckerSet = set[Cell]
 Neighbors = dict[Cell, list[Cell]]
 GridWeights = dict[Cell, float]
 Hash = int
-Cache = Union[dict[tuple[Hash, Player], Evaluation], dict[tuple[tuple[Cell, Player]], Evaluation]]
+TTEntry = namedtuple("TTEntry", ["hash", "depth", "value", "flag", "best_move"])
+Cache = Union[dict[tuple[Hash, Player], Evaluation], dict[tuple[tuple[Cell, Player]], Evaluation], dict[Hash, TTEntry]]
 Depth = int
 
 
@@ -61,12 +63,15 @@ class EngineDodo:
 
         # --------- Attributs pour la fonction d'évaluation --------- #
 
-        self.grid_weights_R: GridWeights = self.generate_grid_heatmaps(R)
-        self.grid_weights_B: GridWeights = self.generate_grid_heatmaps(B)
+        self.grid_weights_center_R: GridWeights = self.generate_grid_heatmaps(R, "center")
+        self.grid_weights_forward_R: GridWeights = self.generate_grid_heatmaps(R, "forward")
+        self.grid_weights_center_B: GridWeights = self.generate_grid_heatmaps(B, "center")
+        self.grid_weights_forward_B: GridWeights = self.generate_grid_heatmaps(B, "forward")
 
         # --------- Attributs pour les caches --------- #
 
         self.cache: Cache = {}
+        self.transposition_table: Cache = {}
         self.sorted_keys = {key: tuple(sorted(key)) for key in self.grid}
 
         # --------- Attributs pour le debug --------- #
@@ -115,27 +120,35 @@ class EngineDodo:
         ]
         return hash(tuple(hash_list))
 
-    def generate_grid_heatmaps(self, player: Player) -> GridWeights:
+    def generate_grid_heatmaps(self, player: Player, starting_point: str) -> GridWeights:
         """
         Calcule, pour chaque case de la grille, le nombre minimal de case à traverser
         pour atteindre la case la plus éloignée de la grille du point de vue de 'player'.
 
         :param player: Un joueur (R ou B).
+        :param starting_point: "centre" ou "forward"
         :return: La grille des poids associés à chaque case.
         """
 
         grid_weights: GridWeights = {}
-        for cell in self.grid:
+
+        if starting_point == "center":
+            for cell in self.grid:
+                grid_weights[cell] = 1 - max(abs(cell[0]), abs(cell[1])) / (self.size - 1)
+        else:
             if player == R:
-                grid_weights[cell] = 1 - (
-                    max(abs(cell[0] - (self.size - 1)), abs(cell[1] - (self.size - 1)))
-                    / (2 * (self.size - 1))
-                )
+                for cell in self.grid:
+                    grid_weights[cell] = 1 - (
+                        max(abs(cell[0] - (self.size - 1)), abs(cell[1] - (self.size - 1)))
+                        / (2 * (self.size - 1))
+                    )
             else:
-                grid_weights[cell] = 1 - (
-                    max(abs(cell[0] + (self.size - 1)), abs(cell[1] + (self.size - 1)))
-                    / (2 * (self.size - 1))
-                )
+                for cell in self.grid:
+                    grid_weights[cell] = 1 - (
+                            max(abs(cell[0] + (self.size - 1)), abs(cell[1] + (self.size - 1)))
+                            / (2 * (self.size - 1))
+                    )
+
         return grid_weights
 
     def update_state(self, state: State) -> None:
@@ -276,18 +289,21 @@ class EngineDodo:
 
     def calculate_metrics(
         self,
-    ) -> tuple[list[ActionDodo], float, float, list[ActionDodo], float, float]:
+    ) -> tuple[list[ActionDodo], float, float, float, list[ActionDodo], float, float, float]:
 
         legals_r: list[ActionDodo] = []
         pins_r: float = 0.0
-        position_r: float = 0.0
+        position_center_r: float = 0.0
+        position_forward_r: float = 0.0
 
         legals_b: list[ActionDodo] = []
         pins_b: float = 0.0
-        position_b: float = 0.0
+        position_center_b: float = 0.0
+        position_forward_b: float = 0.0
 
         for cell in self.R_cell:
-            position_r += self.grid_weights_R[cell]
+            position_center_r += self.grid_weights_center_R[cell]
+            position_forward_r += self.grid_weights_forward_R[cell]
             for nghb in self.R_neighbors[cell]:
                 if self.grid[nghb] == 0:
                     legals_r.append((cell, nghb))
@@ -297,7 +313,8 @@ class EngineDodo:
                     pins_r += 1
 
         for cell in self.B_cell:
-            position_b += self.grid_weights_B[cell]
+            position_center_b += self.grid_weights_center_B[cell]
+            position_forward_b += self.grid_weights_forward_B[cell]
             for nghb in self.B_neighbors[cell]:
                 if self.grid[nghb] == 0:
                     legals_b.append((cell, nghb))
@@ -306,10 +323,10 @@ class EngineDodo:
                 ]:
                     pins_b += 1
 
-        return legals_r, pins_r, position_r, legals_b, pins_b, position_b
+        return legals_r, pins_r, position_center_r, position_forward_r, legals_b, pins_b, position_center_b, position_forward_b
 
     def evaluate_v1(
-        self, player: Player, m: float = 0, p: float = 0, c: float = 0
+        self, player: Player, m: float = 0, pc: float = 0, pf: float = 0 ,c: float = 0
     ) -> Evaluation:
 
         state = tuple(self.grid.items())
@@ -317,7 +334,7 @@ class EngineDodo:
         if (state, player) in self.cache:
             return self.cache[(state, player)]
 
-        legals_r, pins_r, position_r, legals_b, pins_b, position_b = (
+        legals_r, pins_r, position_center_r, position_forward_r, legals_b, pins_b, position_center_b, position_forward_b = (
             self.calculate_metrics()
         )
 
@@ -341,17 +358,22 @@ class EngineDodo:
             return 10000
 
         # Facteur "mobilité"
-        mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
+        # mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
+        mobility = 3*self.nb_checkers * (1 / (1+nb_moves_r) - 1 / (1+nb_moves_b))
         # Facteur "position"
-        position: float = (position_r - position_b) / self.nb_checkers
+        position_center: float = (position_center_r - position_center_b) / self.nb_checkers
+        position_forward: float = (position_forward_r - position_forward_b) / self.nb_checkers
         # Facteur "contrôle"
         control = (pins_r - pins_b) / self.nb_checkers
 
         # Combinaison linéaire des différents facteurs
-        evaluation = m * mobility + p * position + c * control
+        evaluation = m * mobility + pc * position_center + pf * position_forward + c * control
+
+        opponent = R if player == B else B
 
         # Mise en cache
         self.cache[(state, player)] = evaluation
+        self.cache[(state, opponent)] = evaluation
 
         return evaluation
 
@@ -420,7 +442,8 @@ class EngineDodo:
         b: float,
         player: Player,
         m: float,
-        p: float,
+        pc: float,
+        pf: float,
         c: float,
     ) -> float:
         """
@@ -429,7 +452,7 @@ class EngineDodo:
 
         if depth == 0 or self.is_final(player):
             self.terminal_node += 1
-            return self.evaluate_v1(player, m, p, c)
+            return self.evaluate_v1(player, m, pc, pf, c)
 
         self.position_explored += 1
         if player == R:
@@ -438,7 +461,7 @@ class EngineDodo:
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = max(
-                    best_value, self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
+                    best_value, self.alphabeta_v1(depth - 1, a, b, B, m, pc, pf, c)
                 )
                 self.undo(player, legal)
                 a = max(a, best_value)
@@ -452,7 +475,7 @@ class EngineDodo:
             for legal in self.legals(player):
                 self.play(player, legal)
                 best_value = min(
-                    best_value, self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
+                    best_value, self.alphabeta_v1(depth - 1, a, b, R, m, pc, pf, c)
                 )
                 self.undo(player, legal)
                 b = min(b, best_value)
@@ -463,14 +486,14 @@ class EngineDodo:
 
     def alphabeta_actions_v1(
         self,
-        state: State,
         player: Player,
         depth: int,
         a: float,
         b: float,
         legals: list[ActionDodo],
         m: float,
-        p: float,
+        pc: float,
+        pf: float,
         c: float,
     ) -> tuple[float, list[ActionDodo]]:
         """
@@ -478,7 +501,7 @@ class EngineDodo:
         """
 
         if depth == 0 or len(legals) == 0:
-            return self.evaluate_v1(player, m, p, c), []
+            return self.evaluate_v1(player, m, pc, pf, c), []
 
         if player == R:
             best_value = float("-inf")
@@ -490,7 +513,7 @@ class EngineDodo:
 
             for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta_v1(depth - 1, a, b, B, m, p, c)
+                v = self.alphabeta_v1(depth - 1, a, b, B, m, pc, pf, c)
                 self.undo(player, legal)
                 if v > best_value:
                     best_value = v
@@ -511,7 +534,7 @@ class EngineDodo:
 
             for legal in legals:
                 self.play(player, legal)
-                v = self.alphabeta_v1(depth - 1, a, b, R, m, p, c)
+                v = self.alphabeta_v1(depth - 1, a, b, R, m, pc, pf, c)
                 self.undo(player, legal)
                 if v < best_value:
                     best_value = v
@@ -524,6 +547,33 @@ class EngineDodo:
             self.position_explored = 0
 
             return best_value, best_legals
+
+    def iterative_deepening(
+            self,
+            max_depth: Depth,
+            allocated_time: Time,
+            player: Player,
+            legals: list[ActionDodo],
+            m: float,
+            pc: float,
+            pf: float,
+            c: float
+    ) -> tuple[float, list[ActionDodo]]:
+        start_time = time.time()
+        best_legals = legals
+        best_value = float('-inf') if player == R else float('inf')
+
+        for depth in range(1, max_depth + 1):
+            if time.time() - start_time > allocated_time:
+                # print(depth-1)
+                break
+
+            best_value, best_legals = self.alphabeta_actions_v1(
+                player, depth, float('-inf'), float('inf'), legals, m, pc, pf, c
+            )
+            # print(best_value, best_legals)
+
+        return best_value, best_legals
 
     def pplot(self, grid):
         """

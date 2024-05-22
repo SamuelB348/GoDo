@@ -44,36 +44,36 @@ def dodo(
 
 
 def wrapper1(args):
-    m, p, c, best_coeffs, grid_size = args
-    return dodo_test(m, p, c, best_coeffs[0], best_coeffs[1], best_coeffs[2], grid_size)
+    m, pc, pf, c, best_coeffs, grid_size = args
+    return dodo_test(m, pc, pf, c, best_coeffs[0], best_coeffs[1], best_coeffs[2], best_coeffs[3], grid_size)
 
 
 def wrapper2(args):
-    m, p, c, best_coeffs, grid_size = args
-    return dodo_test(best_coeffs[0], best_coeffs[1], best_coeffs[2], m, p, c, grid_size)
+    m, pc, pf, c, best_coeffs, grid_size = args
+    return dodo_test(best_coeffs[0], best_coeffs[1], best_coeffs[2], best_coeffs[3], m, pc, pf, c, grid_size)
 
 
 def wrapper_random(args):
-    m, p, c, grid_size, player = args
-    return dodo_vsrandom(m, p, c, grid_size, player)
+    m, pc, pf, c, grid_size, player = args
+    return dodo_vsrandom(m, pc, pf, c, grid_size, player)
 
 
 def dodo_test(
-    m1: float, p1: float, c1: float, m2: float, p2: float, c2: float, size: int
+    m1: float, pc1: float, pf1: float, c1: float, m2: float, pc2: float, pf2: float, c2: float, size: int
 ):
     state_tmp = start_board_dodo(size)
     time_left = 100
     e1: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     e2: EngineDodo = initialize("dodo", state_tmp, B, size, time_left)
     while True:
-        s = generic_strategy_dodo(e1, state_tmp, R, time_left, m1, p1, c1)
+        s = generic_strategy_dodo(e1, state_tmp, R, time_left, m1, pc1, pf1, c1)
         new_state_dodo(state_tmp, s[1], R)
         e1.play(R, s[1])
         e2.play(R, s[1])
         if e1.is_final(B):
             print("2", end="")
             return -1
-        s = generic_strategy_dodo(e1, state_tmp, B, time_left, m2, p2, c2)
+        s = generic_strategy_dodo(e1, state_tmp, B, time_left, m2, pc2, pf2, c2)
         new_state_dodo(state_tmp, s[1], B)
         e2.play(B, s[1])
         e1.play(B, s[1])
@@ -82,13 +82,13 @@ def dodo_test(
             return 1
 
 
-def dodo_vsrandom(m1: float, p1: float, c1: float, size: int, player: Player):
+def dodo_vsrandom(m1: float, pc1: float, pf1: float, c1: float, size: int, player: Player):
     state_tmp = start_board_dodo(size)
     time_left = 100
     b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)
     while True:
         s = (
-            generic_strategy_dodo(b, state_tmp, R, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, R, time_left, m1, pc1, pf1, c1)
             if player == R
             else strategy_random(b, state_tmp, R, time_left)
         )
@@ -96,10 +96,10 @@ def dodo_vsrandom(m1: float, p1: float, c1: float, size: int, player: Player):
         b.play(R, s[1])
         if b.is_final(B):
             print(B, end="")
-            # b.pplot()
+            # b.pplot(b.grid)
             return -1
         s = (
-            generic_strategy_dodo(b, state_tmp, B, time_left, m1, p1, c1)
+            generic_strategy_dodo(b, state_tmp, B, time_left, m1, pc1, pf1, c1)
             if player == B
             else strategy_random(b, state_tmp, B, time_left)
         )
@@ -107,7 +107,7 @@ def dodo_vsrandom(m1: float, p1: float, c1: float, size: int, player: Player):
         b.play(B, s[1])
         if b.is_final(R):
             print(R, end="")
-            # b.pplot()
+            # b.pplot(b.grid)
             return 1
 
 
@@ -228,11 +228,11 @@ def test_strategies(grid_size: int, nb_games: int):
 
 
 def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
-    best_coeffs = np.array((-3.1584889, 1.26463952, -1.02441619))
+    best_coeffs = np.array((0, 0, 0, 0))
     list_best_coeff = []
     count = 0
     while True:
-        deltas = np.random.normal(0, 2, 3)
+        deltas = np.random.normal(0, 2, 4)
         # deltas = np.insert(deltas, 0, 0)
         coeffs_a = np.add(deltas, best_coeffs)
         coeffs_b = np.add(-deltas, best_coeffs)
@@ -246,7 +246,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
         coeffs_a = tuple(coeffs_a)
         coeffs_b = tuple(coeffs_b)
 
-        results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_b[0], coeffs_b[1], coeffs_b[2])
+        results = match(grid_size, nb_games, coeffs_a[0], coeffs_a[1], coeffs_a[2], coeffs_a[3], coeffs_b[0], coeffs_b[1], coeffs_b[2], coeffs_b[3])
         if results[0] > 0.6*nb_games:  # coeffs_a ont gagné
             best_coeffs = np.add(best_coeffs, np.subtract(coeffs_a, best_coeffs)*factor)
         elif results[0] < 0.4*nb_games:
@@ -257,6 +257,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
             plt.plot([coeff[0] for coeff in list_best_coeff])
             plt.plot([coeff[1] for coeff in list_best_coeff])
             plt.plot([coeff[2] for coeff in list_best_coeff])
+            plt.plot([coeff[3] for coeff in list_best_coeff])
             plt.show()
         count += 1
 
@@ -287,12 +288,12 @@ def tuning_dodo_v2(grid_size: int, nb_games: int, nb_iter: int, a=0.01, c=0.05):
         count += 1
 
 
-def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
+def match(grid_size: int, nb_games: int, m1, pc1, pf1, c1, m2, pc2, pf2, c2):
     nb_wins = 0
     nb_losses = 0
 
     with multiprocessing.Pool() as pool:
-        args_list = [(m1, p1, c1, [m2, p2, c2], grid_size)] * (nb_games // 2)
+        args_list = [(m1, pc1, pf1, c1, [m2, pc2, pf2, c2], grid_size)] * (nb_games // 2)
         results = pool.map(wrapper1, args_list)
     for result in results:
         if result == 1:
@@ -301,7 +302,7 @@ def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
             nb_losses += 1
 
     with multiprocessing.Pool() as pool:
-        args_list = [(m1, p1, c1, [m2, p2, c2], grid_size)] * (nb_games // 2)
+        args_list = [(m1, pc1, pf1, c1, [m2, pc2, pf2, c2], grid_size)] * (nb_games // 2)
         results = pool.map(wrapper2, args_list)
     for result in results:
         if result == -1:
@@ -309,19 +310,19 @@ def match(grid_size: int, nb_games: int, m1, p1, c1, m2, p2, c2):
         else:
             nb_losses += 1
 
-    print(f"\n({m1:.3f}, {p1:.3f}, {c1:.3f}) vs ({m2:.3f}, {p2:.3f}, {c2:.3f})")
+    print(f"\n({m1:.3f}, {pc1:.3f}, {pf1:.3f}, {c1:.3f}) vs ({m2:.3f}, {pc2:.3f}, {pf2:.3f}, {c2:.3f})")
     print_percentage_bar(nb_wins / nb_games, nb_losses / nb_games, nb_games)
     return nb_wins, nb_losses
 
 
-def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
+def match_vsrandom(grid_size: int, nb_games: int, m, pc, pf, c):
     nb_wins = 0
     nb_losses = 0
     b: EngineDodo = initialize("dodo", start_board_dodo(grid_size), R, grid_size, 100)
     results = []
 
     with multiprocessing.Pool() as pool:
-        args_list = [(m, p, c, grid_size, R)] * (nb_games // 2)
+        args_list = [(m, pc, pf, c, grid_size, R)] * (nb_games // 2)
         results = pool.map(wrapper_random, args_list)
     # for i in range(nb_games // 2):
     #     results.append(dodo_vsrandom(b, m, p, c, grid_size, R))
@@ -333,7 +334,7 @@ def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
 
     results = []
     with multiprocessing.Pool() as pool:
-        args_list = [(m, p, c, grid_size, B)] * (nb_games // 2)
+        args_list = [(m, pc, pf, c, grid_size, B)] * (nb_games // 2)
         results = pool.map(wrapper_random, args_list)
     # for i in range(nb_games // 2):
     #     results.append(dodo_vsrandom(b, m, p, c, grid_size, B))
@@ -343,7 +344,7 @@ def match_vsrandom(grid_size: int, nb_games: int, m, p, c):
         else:
             nb_losses += 1
 
-    print(f"\n{[m, p, c]} vs random : Wins: {nb_wins}, Losses: {nb_losses}\n")
+    print(f"\n{[m, pc, pf, c]} vs random : Wins: {nb_wins}, Losses: {nb_losses}\n")
     print_percentage_bar(nb_wins / nb_games, nb_losses / nb_games, nb_games)
 
 
