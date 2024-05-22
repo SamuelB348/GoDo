@@ -31,6 +31,12 @@ TTEntry = namedtuple("TTEntry", ["hash", "depth", "value", "flag", "best_move"])
 Cache = Union[dict[tuple[Hash, Player], Evaluation], dict[tuple[tuple[Cell, Player]], Evaluation], dict[Hash, TTEntry]]
 Depth = int
 
+# ---------------------------------------- Flags ----------------------------------------- #
+
+EXACT = 0
+LOWERBOUND = 1
+UPPERBOUND = 2
+
 
 class EngineDodo:
     """
@@ -78,6 +84,7 @@ class EngineDodo:
 
         self.position_explored: int = 0
         self.terminal_node: int = 0
+        self.hits: int = 0
         self.state_stack: list[Grid] = []
 
     @cached_property
@@ -449,10 +456,24 @@ class EngineDodo:
         """
         Minmax avec élagage alpha-beta.
         """
-
+        origin_alpha = a
         if depth == 0 or self.is_final(player):
             self.terminal_node += 1
             return self.evaluate_v1(player, m, pc, pf, c)
+
+        grid_hash: Hash = hash(tuple(self.grid.items()))
+        if grid_hash in self.transposition_table:
+            tt_entry: TTEntry = self.transposition_table[grid_hash]
+            if tt_entry.depth >= depth:
+                if tt_entry.flag == EXACT:
+                    return tt_entry.value
+                elif tt_entry.flag == LOWERBOUND:
+                    a = max(a, tt_entry.value)
+                elif tt_entry.flag == UPPERBOUND:
+                    b = min(b, tt_entry.value)
+                if a >= b:
+                    self.hits += 1
+                    return tt_entry.value
 
         self.position_explored += 1
         if player == R:
@@ -468,7 +489,6 @@ class EngineDodo:
                 if a >= b:
                     break  # β cut-off
 
-            return best_value
         else:
             best_value = float("inf")
 
@@ -482,7 +502,17 @@ class EngineDodo:
                 if a >= b:
                     break  # α cut-off
 
-            return best_value
+        if best_value <= origin_alpha:
+            new_entry = TTEntry(grid_hash, depth, best_value, UPPERBOUND, None)
+
+        elif best_value >= b:
+            new_entry = TTEntry(grid_hash, depth, best_value, LOWERBOUND, None)
+
+        else:
+            new_entry = TTEntry(grid_hash, depth, best_value, EXACT, None)
+
+        self.transposition_table[grid_hash] = new_entry
+        return best_value
 
     def alphabeta_actions_v1(
         self,
@@ -522,9 +552,6 @@ class EngineDodo:
                     best_legals.append(legal)
                 a = max(a, best_value)
 
-            self.terminal_node = 0
-            self.position_explored = 0
-
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
@@ -542,9 +569,6 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-
-            self.terminal_node = 0
-            self.position_explored = 0
 
             return best_value, best_legals
 
@@ -572,7 +596,10 @@ class EngineDodo:
                 player, depth, float('-inf'), float('inf'), legals, m, pc, pf, c
             )
             # print(best_value, best_legals)
-
+        print(self.hits, self.terminal_node, self.position_explored)
+        self.hits = 0
+        self.terminal_node = 0
+        self.position_explored = 0
         return best_value, best_legals
 
     def pplot(self, grid):
