@@ -522,9 +522,6 @@ class EngineDodo:
                     best_legals.append(legal)
                 a = max(a, best_value)
 
-            self.terminal_node = 0
-            self.position_explored = 0
-
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
@@ -542,9 +539,6 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 b = min(b, best_value)
-
-            self.terminal_node = 0
-            self.position_explored = 0
 
             return best_value, best_legals
 
@@ -565,14 +559,16 @@ class EngineDodo:
 
         for depth in range(1, max_depth + 1):
             if time.time() - start_time > allocated_time:
-                # print(depth-1)
+                print(depth-1)
                 break
 
             best_value, best_legals = self.alphabeta_actions_v1(
                 player, depth, float('-inf'), float('inf'), legals, m, pc, pf, c
             )
             # print(best_value, best_legals)
-
+        print(self.terminal_node, self.position_explored)
+        self.terminal_node = 0
+        self.position_explored = 0
         return best_value, best_legals
 
     def pplot(self, grid):
