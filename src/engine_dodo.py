@@ -78,6 +78,7 @@ class EngineDodo:
 
         self.position_explored: int = 0
         self.terminal_node: int = 0
+        self.hits: int = 0
         self.state_stack: list[Grid] = []
 
     @cached_property
@@ -302,26 +303,26 @@ class EngineDodo:
         position_forward_b: float = 0.0
 
         for cell in self.R_cell:
-            position_center_r += self.grid_weights_center_R[cell]
-            position_forward_r += self.grid_weights_forward_R[cell]
+            # position_center_r += self.grid_weights_center_R[cell]
+            # position_forward_r += self.grid_weights_forward_R[cell]
             for nghb in self.R_neighbors[cell]:
                 if self.grid[nghb] == 0:
                     legals_r.append((cell, nghb))
-                elif self.grid[nghb] == B and 0 in [
-                    self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]
-                ]:
-                    pins_r += 1
+                # elif self.grid[nghb] == B and 0 in [
+                #     self.grid[nghb_B] for nghb_B in self.B_neighbors[nghb]
+                # ]:
+                #     pins_r += 1
 
         for cell in self.B_cell:
-            position_center_b += self.grid_weights_center_B[cell]
-            position_forward_b += self.grid_weights_forward_B[cell]
+            # position_center_b += self.grid_weights_center_B[cell]
+            # position_forward_b += self.grid_weights_forward_B[cell]
             for nghb in self.B_neighbors[cell]:
                 if self.grid[nghb] == 0:
                     legals_b.append((cell, nghb))
-                elif self.grid[nghb] == R and 0 in [
-                    self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]
-                ]:
-                    pins_b += 1
+                # elif self.grid[nghb] == R and 0 in [
+                #     self.grid[nghb_R] for nghb_R in self.R_neighbors[nghb]
+                # ]:
+                #     pins_b += 1
 
         return legals_r, pins_r, position_center_r, position_forward_r, legals_b, pins_b, position_center_b, position_forward_b
 
@@ -329,10 +330,11 @@ class EngineDodo:
         self, player: Player, m: float = 0, pc: float = 0, pf: float = 0 ,c: float = 0
     ) -> Evaluation:
 
-        state = tuple(self.grid.items())
-        # state: Hash = self.grid_hash()
-        if (state, player) in self.cache:
-            return self.cache[(state, player)]
+        # state = tuple(self.grid.items())
+        # # state: Hash = self.grid_hash()
+        # if (state, player) in self.cache:
+        #     self.hits += 1
+        #     return self.cache[(state, player)]
 
         legals_r, pins_r, position_center_r, position_forward_r, legals_b, pins_b, position_center_b, position_forward_b = (
             self.calculate_metrics()
@@ -343,18 +345,18 @@ class EngineDodo:
 
         # Si un des deux joueurs gagne
         if player == R and nb_moves_r == 0:
-            self.cache[(state, player)] = 10000
+            # self.cache[(state, player)] = 10000
             return 10000
         if player == B and nb_moves_b == 0:
-            self.cache[(state, player)] = -10000
+            # self.cache[(state, player)] = -10000
             return -10000
 
         # Si un des deux joueurs gagne au prochain coup de manière certaine
         if player == R and nb_moves_b == 0 and pins_b == 0:
-            self.cache[(state, player)] = -10000
+            # self.cache[(state, player)] = -10000
             return -10000
         if player == B and nb_moves_r == 0 and pins_r == 0:
-            self.cache[(state, player)] = 10000
+            # self.cache[(state, player)] = 10000
             return 10000
 
         # Facteur "mobilité"
@@ -372,8 +374,8 @@ class EngineDodo:
         opponent = R if player == B else B
 
         # Mise en cache
-        self.cache[(state, player)] = evaluation
-        self.cache[(state, opponent)] = evaluation
+        # self.cache[(state, player)] = evaluation
+        # self.cache[(state, opponent)] = evaluation
 
         return evaluation
 
@@ -507,8 +509,8 @@ class EngineDodo:
             best_value = float("-inf")
             best_legals: list[ActionDodo] = []
             if len(legals) == 1:
-                self.terminal_node = 0
-                self.position_explored = 0
+                # self.terminal_node = 0
+                # self.position_explored = 0
                 return best_value, legals
 
             for legal in legals:
@@ -521,7 +523,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-
+            print(self.position_explored, self.terminal_node, self.hits)
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")

@@ -92,8 +92,11 @@ def dodo_vsrandom(m1: float, pc1: float, pf1: float, c1: float, size: int, playe
             if player == R
             else strategy_random(b, state_tmp, R, time_left)
         )
-        new_state_dodo(state_tmp, s[1], R)
+        break
+        # new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
+        # b.pplot(b.grid)
+        print("tour")
         if b.is_final(B):
             print(B, end="")
             # b.pplot(b.grid)
@@ -103,8 +106,10 @@ def dodo_vsrandom(m1: float, pc1: float, pf1: float, c1: float, size: int, playe
             if player == B
             else strategy_random(b, state_tmp, B, time_left)
         )
-        new_state_dodo(state_tmp, s[1], B)
+        # new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
+        print("tour")
+        # b.pplot(b.grid)
         if b.is_final(R):
             print(R, end="")
             # b.pplot(b.grid)
