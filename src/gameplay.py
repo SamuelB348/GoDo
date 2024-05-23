@@ -146,7 +146,7 @@ def generic_strategy_dodo(
 
     list_moves: list[ActionDodo] = env.iterative_deepening(
         16,
-        1,
+        2,
         player,
         legals,
         m,

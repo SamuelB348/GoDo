@@ -536,10 +536,6 @@ class EngineDodo:
         if player == R:
             best_value = float("-inf")
             best_legals: list[ActionDodo] = []
-            if len(legals) == 1:
-                self.terminal_node = 0
-                self.position_explored = 0
-                return best_value, legals
 
             for legal in legals:
                 self.play(player, legal)
@@ -556,8 +552,6 @@ class EngineDodo:
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
-            if len(legals) == 1:
-                return best_value, legals
 
             for legal in legals:
                 self.play(player, legal)
@@ -596,7 +590,8 @@ class EngineDodo:
                 player, depth, float('-inf'), float('inf'), legals, m, pc, pf, c
             )
             # print(best_value, best_legals)
-        print(self.hits, self.terminal_node, self.position_explored)
+            print(self.hits, self.terminal_node, self.position_explored)
+
         self.hits = 0
         self.terminal_node = 0
         self.position_explored = 0
