@@ -123,15 +123,15 @@ def generic_strategy_dodo(
 
     opponent: Player = R if player == B else B
     legals = env.legals(player)
-    # legals_opp = env.legals(opponent)
+    legals_opp = env.legals(opponent)
 
     if len(legals) == 1:
         return env, legals[0]
 
-    # depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 10000, 12) + 1
+    depth = env.adaptable_depth_v2(len(legals), len(legals_opp), 20000, 12) + 1
     # depth = env.adaptable_depth_v1(len(legals), 8, 3, 7)
 
-    depth = 5
+    # depth = 5
     list_moves: list[ActionDodo] = env.alphabeta_actions_v1(
         player,
         depth,

@@ -523,7 +523,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-            print(self.position_explored, self.terminal_node, self.hits)
+            # print(self.position_explored, self.terminal_node, self.hits)
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")

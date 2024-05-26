@@ -28,16 +28,16 @@ def dodo(
         s = strategy_rouge(b, state_tmp, R, time_left)
         # new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
-        if debug:
-            b.pplot(b.grid)
+        # if debug:
+        #     b.pplot(b.grid)
         if b.is_final(B):
             # b.pplot(b.grid)
             return -1
         s = strategy_bleu(b, state_tmp, B, time_left)
         # new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
-        if debug:
-            b.pplot(b.grid)
+        # if debug:
+        #     b.pplot(b.grid)
         if b.is_final(R):
             # b.pplot(b.grid)
             return 1
@@ -92,14 +92,13 @@ def dodo_vsrandom(m1: float, pc1: float, pf1: float, c1: float, size: int, playe
             if player == R
             else strategy_random(b, state_tmp, R, time_left)
         )
-        break
         # new_state_dodo(state_tmp, s[1], R)
         b.play(R, s[1])
         # b.pplot(b.grid)
-        print("tour")
+        # print("tour")
         if b.is_final(B):
             print(B, end="")
-            # b.pplot(b.grid)
+            b.pplot(b.grid)
             return -1
         s = (
             generic_strategy_dodo(b, state_tmp, B, time_left, m1, pc1, pf1, c1)
@@ -108,11 +107,11 @@ def dodo_vsrandom(m1: float, pc1: float, pf1: float, c1: float, size: int, playe
         )
         # new_state_dodo(state_tmp, s[1], B)
         b.play(B, s[1])
-        print("tour")
+        # print("tour")
         # b.pplot(b.grid)
         if b.is_final(R):
             print(R, end="")
-            # b.pplot(b.grid)
+            b.pplot(b.grid)
             return 1
 
 
