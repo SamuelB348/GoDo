@@ -137,19 +137,19 @@ def grid_heatmap_plot(heatmap: dict[Cell, float], hex_size: int):
 #     return nb_moves
 #
 #
-# def sum_lists(list_of_lists):
-#     max_length = max(len(lst) for lst in list_of_lists)  # Trouve la longueur maximale parmi toutes les listes
-#     new_lsts = [lst + [0] * max(0, max_length - len(lst)) for lst in list_of_lists]
-#     summed_list = []
-#     for i in range(max_length):
-#         count = 0
-#         nb = 0
-#         for lst in new_lsts:
-#             if lst[i] != 0:
-#                 count += lst[i]
-#                 nb += 1
-#         summed_list.append(count/nb)
-#     return summed_list
+def sum_lists(list_of_lists):
+    max_length = max(len(lst) for lst in list_of_lists)  # Trouve la longueur maximale parmi toutes les listes
+    new_lsts = [lst + [0] * max(0, max_length - len(lst)) for lst in list_of_lists]
+    summed_list = []
+    for i in range(max_length):
+        count = 0
+        nb = 1
+        for lst in new_lsts:
+            if lst[i] != 0:
+                count += lst[i]
+                nb += 1
+        summed_list.append(count/nb)
+    return summed_list
 
 #     self.grid_weights_R[el] = 0
 #     self.grid_weights_B[el] = 0

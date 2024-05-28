@@ -1,5 +1,6 @@
 from __future__ import annotations
 import copy
+import time
 import random
 import cProfile
 import pstats
@@ -11,6 +12,9 @@ from matplotlib.patches import Polygon
 from hex_tools import *
 import gameplay as gp
 import pprint
+from other import sum_lists, print_percentage_bar
+import multiprocessing
+from random_agent import *
 
 
 # -------------------- Alias de types et constantes pour communiquer avec l'arbitre -------------------- #
@@ -50,13 +54,13 @@ class GameState:
         # -------------------- Structures de données -------------------- #
 
         self.grid: Grid = grid
+        # self.R_CELLS: CellSet = {
+        #     cell for cell, player in self.grid.items() if player == R
+        # }
+        # self.B_CELLS: CellSet = {
+        #     cell for cell, player in self.grid.items() if player == B
+        # }
         self.CELLS: CellSet = cells
-        self.R_CELLS: CellSet = {
-            cell for cell, player in self.grid.items() if player == R
-        }
-        self.B_CELLS: CellSet = {
-            cell for cell, player in self.grid.items() if player == B
-        }
         self.R_POV_NEIGHBORS: Neighbors = r_neighbors
         self.B_POV_NEIGHBORS: Neighbors = b_neighbors
 
@@ -65,17 +69,45 @@ class GameState:
         self.legals: list[ActionDodo] = self.generate_legal_actions()
 
     def generate_legal_actions(self) -> list[ActionDodo]:
-        legals: list[ActionDodo] = []
-        for cell in self.R_CELLS if self.player == R else self.B_CELLS:
-            for nghb in (
-                self.R_POV_NEIGHBORS[cell]
-                if self.player == R
-                else self.B_POV_NEIGHBORS[cell]
-            ):
-                if self.grid[nghb] == 0:
-                    legals.append((cell, nghb))
+        if self.player == R:
+            player_cells = R
+            neighbors = self.R_POV_NEIGHBORS
+        else:
+            player_cells = B
+            neighbors = self.B_POV_NEIGHBORS
+
+        legals = [(cell, nghb)
+                  for cell in self.CELLS
+                  if self.grid[cell] == player_cells
+                  for nghb in neighbors[cell]
+                  if self.grid[nghb] == 0]
 
         return legals
+
+        # legals: list[ActionDodo] = []
+        # for cell in self.R_CELLS if self.player == R else self.B_CELLS:
+        #     for nghb in (
+        #             self.R_POV_NEIGHBORS[cell]
+        #             if self.player == R
+        #             else self.B_POV_NEIGHBORS[cell]
+        #     ):
+        #         if self.grid[nghb] == 0:
+        #             legals.append((cell, nghb))
+        #
+        # return legals
+
+        # player_cells = self.R_CELLS if self.player == R else self.B_CELLS
+        # neighbors = self.R_POV_NEIGHBORS if self.player == R else self.B_POV_NEIGHBORS
+        # grid = self.grid
+        #
+        # legals = [
+        #     (cell, nghb)
+        #     for cell in player_cells
+        #     for nghb in neighbors[cell]
+        #     if grid[nghb] == 0
+        # ]
+        #
+        # return legals
 
     def get_legal_actions(self) -> list[ActionDodo]:
         return self.legals
@@ -150,6 +182,7 @@ class MonteCarloTreeSearchNode:
         self,
         state: GameState,
         player: Player,
+        c,
         parent=None,
         parent_action=None,
     ):
@@ -157,32 +190,25 @@ class MonteCarloTreeSearchNode:
         self.parent = parent
         self.parent_action: Optional[ActionDodo] = parent_action
         self.children = []
-        self.number_of_visits: int = 0
-        self.results: DefaultDict[int, int] = defaultdict(int)
-        self.results[1] = 0
-        self.results[-1] = 0
+        self.Q = 0
+        self.N = 0
         self.untried_actions: Optional[list[ActionDodo]] = None
         self.untried_actions = self.initialize_actions()
         self.player: Player = player
+        self.opponent = R if self.player == B else B
+
+        self.c = c
         return
 
     def initialize_actions(self) -> list[ActionDodo]:
         self.untried_actions = self.state.get_legal_actions().copy()
         return self.untried_actions
 
-    def q(self) -> int:
-        wins = self.results[1]
-        loses = self.results[-1]
-        return wins - loses
-
-    def n(self) -> int:
-        return self.number_of_visits
-
     def expand(self):
         action = self.untried_actions.pop()
         next_state = self.state.move(action)
         child_node = MonteCarloTreeSearchNode(
-            next_state, self.player, parent=self, parent_action=action
+            next_state, self.player, self.c, parent=self, parent_action=action
         )
 
         self.children.append(child_node)
@@ -199,24 +225,23 @@ class MonteCarloTreeSearchNode:
             action = self.rollout_policy(possible_moves)
             current_rollout_state = current_rollout_state.move(action)
 
-        if current_rollout_state.game_result() == self.player:
+        if current_rollout_state.game_result() != self.state.player:
             return 1
         else:
-            return -1
+            return 0
 
     def backpropagate(self, result) -> None:
-        self.number_of_visits += 1.0
-        self.results[result] += 1.0
+        self.N += 1.0
+        self.Q += result
         if self.parent:
-            self.parent.backpropagate(result)
+            self.parent.backpropagate(1 - result)
 
     def is_fully_expanded(self) -> bool:
         return len(self.untried_actions) == 0
 
     def best_child(self, c_param=0.1):
-
         choices_weights = [
-            (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n()))
+            (c.Q / c.N) + c_param * np.sqrt((2 * np.log(self.N) / c.N))
             for c in self.children
         ]
         return self.children[np.argmax(choices_weights)]
@@ -232,7 +257,7 @@ class MonteCarloTreeSearchNode:
             if not current_node.is_fully_expanded():
                 return current_node.expand()
             else:
-                current_node = current_node.best_child()
+                current_node = current_node.best_child(c_param=self.c)
         return current_node
 
     def best_action(self):
@@ -243,11 +268,14 @@ class MonteCarloTreeSearchNode:
             reward = v.rollout()
             v.backpropagate(reward)
 
-        return self.best_child(c_param=0.1)
+        return self.best_child(c_param=0.)
+
+    def __str__(self):
+        return f"Parent action : {self.parent_action}\n|-- Number simulations : {self.N}\n|-- Number of victories : {self.Q}\n|-- Ratio : {self.Q/self.N:.3f}"
 
 
 class Engine:
-    def __init__(self, state: Grid, player: Player, hex_size: int, total_time: Time):
+    def __init__(self, state: Grid, player: Player, hex_size: int, total_time: Time, c):
 
         # -------------------- Attributs généraux -------------------- #
 
@@ -264,16 +292,18 @@ class Engine:
 
         # -------------------- Monte Carlo Tree Searcher -------------------- #
 
+        self.c = c
         self.MCTSearcher: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
             GameState(
                 state,
-                player,
+                R,
                 hex_size,
                 self.CELLS,
                 self.R_POV_NEIGHBORS,
                 self.B_POV_NEIGHBORS,
             ),
             player,
+            c
         )
 
     @staticmethod
@@ -296,6 +326,7 @@ class Engine:
     def select_best_move(self):
         best_children = self.MCTSearcher.best_action()
         self.MCTSearcher = best_children
+        # print(best_children)
         return best_children.parent_action
 
     def update_state(self, grid: Grid):
@@ -308,7 +339,7 @@ class Engine:
         if has_played in self.MCTSearcher.untried_actions:
             next_state = self.MCTSearcher.state.move(has_played)
             self.MCTSearcher = MonteCarloTreeSearchNode(
-                next_state, self.player, parent=self.MCTSearcher, parent_action=has_played
+                next_state, self.player, self.c, parent=self.MCTSearcher, parent_action=has_played
             )
         else:
             for child in self.MCTSearcher.children:
@@ -330,8 +361,8 @@ def start_board_dodo(size: int) -> State:
                 grid.append((Cell(q, r), R))
             elif r > -q + (size - 3):
                 grid.append((Cell(q, r), B))
-            else:
-                grid.append((Cell(q, r), 0))
+            # else:
+            #     grid.append((Cell(q, r), 0))
     return grid
 
 
@@ -352,11 +383,11 @@ def state_to_dict(state: State, size: int):
 
 
 def initialize(
-    game: str, state: State, player: Player, hex_size: int, total_time: Time
+    game: str, state: State, player: Player, hex_size: int, total_time: Time, c
 ) -> Environment:
     if game.lower() == "dodo":
         grid = state_to_dict(state, hex_size)
-        return Engine(grid, player, hex_size, total_time)
+        return Engine(grid, player, hex_size, total_time, c)
     else:
         pass
 
@@ -375,46 +406,151 @@ def final_result(state: State, score: Score, player: Player):
     pass
 
 
-def new_state_dodo(state: State, action: Action, player: Player) -> State:
+def new_state_dodo(state: State, action: Action, player: Player):
     state.remove((action[0], player))
     state.append((action[1], player))
-    return state
+    # return state
 
 
 def game_loop(size: int):
+    times = []
     state_tmp = start_board_dodo(size)
     e = initialize("dodo", state_tmp, R, size, 100)
     b = gp.initialize("dodo", state_tmp, B, size, 100)
     while True:
+        start = time.time()
         s = strategy(e, state_tmp, e.player, 100)
+        times.append(time.time() - start)
         if s is None:
             e.MCTSearcher.state.pplot()
-            return 1
+            print(1)
+            return times
         # e.MCTSearcher.state.pplot()
         b.play(R, s)
         # b.pplot(b.grid)
         if b.is_final(B):
-            print("hi")
             b.pplot(b.grid)
-            return -1
+            print(2)
+            return times
         state_tmp = new_state_dodo(state_tmp, s, R)
         # act = random.choice(e.MCTSearcher.state.legals)
         act = gp.generic_strategy_dodo(b, state_tmp, B, 100, 1.25002444, 0.26184217, 0.14314292, -0.17516003)[1]
         b.play(B, act)
-        b.pplot(b.grid)
+        # b.pplot(b.grid)
         state_tmp = new_state_dodo(state_tmp, act, B)
 
 
+def dodo(size: int, c1, c2):
+    state_tmp = start_board_dodo(size)
+    e1 = initialize("dodo", state_tmp, R, size, 100, c1)
+    e2 = initialize("dodo", state_tmp, B, size, 100, c2)
+    # rd = RandomAgent(state_tmp, B, size, e1.MCTSearcher.state.CELLS, e1.MCTSearcher.state.R_POV_NEIGHBORS, e1.MCTSearcher.state.B_POV_NEIGHBORS)
+    while True:
+        s = strategy(e1, state_tmp, e1.player, 100)
+        # e1.MCTSearcher.state.pplot()
+
+        if s is None:
+            e1.MCTSearcher.state.pplot()
+            return 1
+
+        new_state_dodo(state_tmp, s, R)
+        # rd.update_state(state_tmp)
+        # if rd.is_final():
+        #     rd.pplot()
+        #     return -1
+        # s = rd.get_action()
+
+        s = strategy(e2, state_tmp, e2.player, 100)
+        # e2.MCTSearcher.state.pplot()
+
+        if s is None:
+            e2.MCTSearcher.state.pplot()
+            return -1
+        new_state_dodo(state_tmp, s, B)
+
+
+def wrapper(args):
+    c1, c2, size = args
+    return dodo(size, c1, c2)
+
+
+def match(nb_games: int, size: int, c1, c2):
+    nb_wins = 0
+    nb_losses = 0
+
+    with multiprocessing.Pool() as pool:
+        args_list = [(c1, c2, size)] * (nb_games // 2)
+        results = pool.map(wrapper, args_list)
+
+    for result in results:
+        if result == 1:
+            nb_wins += 1
+        else:
+            nb_losses += 1
+
+    with multiprocessing.Pool() as pool:
+        args_list = [(c2, c1, size)] * (nb_games // 2)
+        results = pool.map(wrapper, args_list)
+    for result in results:
+        if result == -1:
+            nb_wins += 1
+        else:
+            nb_losses += 1
+
+    print(f"\n({c1:.3f}) vs ({c2:.3f})")
+    print_percentage_bar(nb_wins / nb_games, nb_losses / nb_games, nb_games)
+    return nb_wins, nb_losses
+
+
+def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
+    best_coeffs = np.array([0.17653504])
+    list_best_coeff = []
+    count = 0
+    while True:
+        deltas = np.random.normal(0, 0.1, 1)
+        coeffs_a = best_coeffs + deltas
+        coeffs_b = best_coeffs - deltas
+
+        # S'assurer que les coefficients restent positifs
+        coeffs_a[0] = max(coeffs_a[0], 0)
+        coeffs_b[0] = max(coeffs_b[0], 0)
+
+        results = match(nb_games, grid_size, coeffs_a[0], coeffs_b[0])
+
+        if results[0] > 0.6 * nb_games:  # coeffs_a ont gagné
+            best_coeffs = best_coeffs + (coeffs_a - best_coeffs) * factor
+        elif results[0] < 0.4 * nb_games:
+            best_coeffs = best_coeffs + (coeffs_b - best_coeffs) * factor
+
+        list_best_coeff.append(best_coeffs[0])
+        print(best_coeffs)
+
+        if count % 2 == 0:
+            plt.plot(list_best_coeff)
+            plt.xlabel('Iteration')
+            plt.ylabel('Best Coefficient')
+            plt.title('Tuning Coefficient Over Time')
+            plt.show()
+
+        count += 1
+
+
 def main():
-    # for _ in range(100):
-    #     e = initialize("dodo", start_board_dodo(4), R, 4, 100)
-    #     a = e.select_best_move()
+    for _ in range(100):
+        e = initialize("dodo", start_board_dodo(4), R, 4, 100, 1.)
+        a = e.select_best_move()
+    # dodo(4, 0.1, 0.1)
     # print(strategy(e, start_board_dodo(4), R, 100))
-    tab = []
-    for _ in range(1):
-        tab.append(game_loop(6))
+    # tab = []
+    # for _ in range(1):
+    #     tab.append(dodo(4, 1, 1))
+    # print(tab.count(1), tab.count(-1))
+    # plt.plot(sum_lists(tab))
+    # plt.show()
     #
     # print(tab.count(1), tab.count(-1))
+    # match(10, 4, 0.1, 1)
+    # tuning_dodo(4, 10)
 
 
 if __name__ == "__main__":
