@@ -350,34 +350,34 @@ class EngineDodo:
         if player == B and nb_moves_b == 0:
             # self.cache[(state, player)] = -10000
             return -10000
-
-        # Si un des deux joueurs gagne au prochain coup de manière certaine
-        if player == R and nb_moves_b == 0 and pins_b == 0:
-            # self.cache[(state, player)] = -10000
-            return -10000
-        if player == B and nb_moves_r == 0 and pins_r == 0:
-            # self.cache[(state, player)] = 10000
-            return 10000
-
-        # Facteur "mobilité"
-        # mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
-        mobility = 3*self.nb_checkers * (1 / (1+nb_moves_r) - 1 / (1+nb_moves_b))
-        # Facteur "position"
-        position_center: float = (position_center_r - position_center_b) / self.nb_checkers
-        position_forward: float = (position_forward_r - position_forward_b) / self.nb_checkers
-        # Facteur "contrôle"
-        control = (pins_r - pins_b) / self.nb_checkers
-
-        # Combinaison linéaire des différents facteurs
-        evaluation = m * mobility + pc * position_center + pf * position_forward + c * control
-
-        opponent = R if player == B else B
+        return 0
+        # # Si un des deux joueurs gagne au prochain coup de manière certaine
+        # if player == R and nb_moves_b == 0 and pins_b == 0:
+        #     # self.cache[(state, player)] = -10000
+        #     return -10000
+        # if player == B and nb_moves_r == 0 and pins_r == 0:
+        #     # self.cache[(state, player)] = 10000
+        #     return 10000
+        #
+        # # Facteur "mobilité"
+        # # mobility = (nb_moves_r - nb_moves_b) / (3 * self.nb_checkers)
+        # mobility = 3*self.nb_checkers * (1 / (1+nb_moves_r) - 1 / (1+nb_moves_b))
+        # # Facteur "position"
+        # position_center: float = (position_center_r - position_center_b) / self.nb_checkers
+        # position_forward: float = (position_forward_r - position_forward_b) / self.nb_checkers
+        # # Facteur "contrôle"
+        # control = (pins_r - pins_b) / self.nb_checkers
+        #
+        # # Combinaison linéaire des différents facteurs
+        # evaluation = m * mobility + pc * position_center + pf * position_forward + c * control
+        #
+        # opponent = R if player == B else B
 
         # Mise en cache
         # self.cache[(state, player)] = evaluation
         # self.cache[(state, opponent)] = evaluation
 
-        return evaluation
+        # return evaluation
 
     @staticmethod
     def adaptable_depth_v1(
@@ -451,16 +451,17 @@ class EngineDodo:
         """
         Minmax avec élagage alpha-beta.
         """
-
-        if depth == 0 or self.is_final(player):
+        legals = self.legals(player)
+        if depth == 0 or len(legals) == 0:
             self.terminal_node += 1
             return self.evaluate_v1(player, m, pc, pf, c)
+            # return 0
 
         self.position_explored += 1
         if player == R:
             best_value = float("-inf")
 
-            for legal in self.legals(player):
+            for legal in legals:
                 self.play(player, legal)
                 best_value = max(
                     best_value, self.alphabeta_v1(depth - 1, a, b, B, m, pc, pf, c)
@@ -474,7 +475,7 @@ class EngineDodo:
         else:
             best_value = float("inf")
 
-            for legal in self.legals(player):
+            for legal in legals:
                 self.play(player, legal)
                 best_value = min(
                     best_value, self.alphabeta_v1(depth - 1, a, b, R, m, pc, pf, c)
@@ -504,7 +505,7 @@ class EngineDodo:
 
         if depth == 0 or len(legals) == 0:
             return self.evaluate_v1(player, m, pc, pf, c), []
-
+            # return 0, []
         if player == R:
             best_value = float("-inf")
             best_legals: list[ActionDodo] = []
@@ -523,7 +524,7 @@ class EngineDodo:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
-            print(self.position_explored, self.terminal_node, self.hits)
+            # print(self.position_explored, self.terminal_node, self.hits)
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
