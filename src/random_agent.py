@@ -4,26 +4,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from hex_tools import *
-
-
-
-# -------------------- Alias de types et constantes pour communiquer avec l'arbitre -------------------- #
-
-ActionGopher = Cell
-ActionDodo = tuple[Cell, Cell]
-Action = Union[ActionGopher, ActionDodo]
-Player = int
-R = 1
-B = 2
-State = list[tuple[Cell, Player]]
-Score = int
-Time = int
-
-# -------------------- Autres alias de types et constantes -------------------- #
-
-Grid = dict[Cell, Player]
-CellSet = set[Cell]
-Neighbors = dict[Cell, list[Cell]]
+from types_constants import *
 
 
 class RandomAgent:
@@ -72,10 +53,10 @@ class RandomAgent:
 
     def update_state(self, state: State):
         self.grid = self.state_to_grid(state)
-        self.R_CELLS: CellSet = {
+        self.R_CELLS = {
             cell for cell, player in self.grid.items() if player == R
         }
-        self.B_CELLS: CellSet = {
+        self.B_CELLS = {
             cell for cell, player in self.grid.items() if player == B
         }
 
