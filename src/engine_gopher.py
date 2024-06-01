@@ -37,38 +37,52 @@ class EngineGopher:
         self.B_hex = {hex_key for hex_key, player in self.grid.items() if player == B}
         self.Empty_hex = {hex_key for hex_key, player in self.grid.items() if player == 0}
 
-    def legals(self, player: Player) -> list[ActionGopher]:
+    def empty_grid(self, grid: State) -> bool:
+        for cell in grid:
+            if cell[1] != 0:
+                return False
+        return True
+
+    def legals(self, player: Player, grid: State) -> list[ActionGopher]:
+        legals: list[ActionGopher] = []
         if player == R:
             for box in self.Empty_hex:
                 nb_neighbors = 0
+                info_rouge = False
                 for i in [0, 1, 2, 3, 4, 5]:
-                    if self.grid[neighbor(box, i)] == R:
-                        nb_neighbors = 0
+                    if neighbor(box, i) in self.grid and self.grid[neighbor(box, i)] == R:
+                        info_rouge = True
                         break
                     elif (
                             neighbor(box, i) in self.grid
                             and self.grid[neighbor(box, i)] == B
                     ):
                         nb_neighbors += 1
-                if nb_neighbors == 1:
-                    yield box, neighbor(box, player)
+                if self.empty_grid(grid):
+                    legals.append(box)
+                elif 0 < nb_neighbors < 2 and not info_rouge:
+                    #yield box, neighbor(box, player)
+                    legals.append(box)
         elif player == B:
             for box in self.Empty_hex:
                 nb_neighbors = 0
+                info_bleu = False
                 for i in [0, 1, 2, 3, 4, 5]:
-                    if self.grid[neighbor(box, i)] == B:
-                        nb_neighbors = 0
+                    if neighbor(box, i) in self.grid and self.grid[neighbor(box, i)] == B:
+                        info_bleu = True
                         break
                     elif (
                             neighbor(box, i) in self.grid
                             and self.grid[neighbor(box, i)] == R
                     ):
                         nb_neighbors += 1
-                if nb_neighbors == 1:
-                    yield box, neighbor(box, player)
+                if 0 < nb_neighbors < 2 and not info_bleu:
+                    #yield box, neighbor(box, player)
+                    legals.append(box)
+        return legals
 
-    def is_final(self, player: Player) -> bool:
-        return len(self.legals(player)) == 0
+    def is_final(self, player: Player, grid : State) -> bool:
+        return len(self.legals(player, grid)) == 0
 
     def play(self, player: Player, action: ActionGopher):
         self.grid[action] = player
@@ -205,4 +219,3 @@ class EngineGopher:
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
-

@@ -10,6 +10,10 @@ from other import print_percentage_bar
 
 
 def new_state_dodo(grid: State, action: Action, player: Player) -> State:
+    '''
+    Actualise le plateau avec le coup du joueur
+
+    '''
     for count, box in enumerate(grid):
         if box[0] == action[0]:
             grid[count] = (box[0], 0)
@@ -21,6 +25,10 @@ def new_state_dodo(grid: State, action: Action, player: Player) -> State:
 def dodo(
     strategy_rouge: Strategy, strategy_bleu: Strategy, size: int, debug=False
 ) -> Score:
+    '''
+    Boucle de jeu
+
+    '''
     state_tmp = start_board_dodo(size)
     time_left = 100
     b: EngineDodo = initialize("dodo", state_tmp, R, size, time_left)

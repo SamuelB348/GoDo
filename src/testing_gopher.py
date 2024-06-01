@@ -10,7 +10,10 @@ from other import print_percentage_bar
 
 
 def new_state_gopher(grid: State, action: Action, player: Player) -> State:
-    pass
+    for count, box in enumerate(grid):
+        if box[0] == action:
+            grid[count] = (box[0], player)
+    return grid
 
 
 def gopher(
@@ -21,16 +24,16 @@ def gopher(
     b: EngineGopher = initialize("gopher", state_tmp, R, size, time_left)
     while True:
         s = strategy_rouge(b, state_tmp, R, time_left)
-        new_state_gopher(state_tmp, s[1], R)
+        state_tmp = new_state_gopher(state_tmp, s[1], R)
         b.play(R, s[1])
         if debug:
             b.pplot()
-        if b.is_final(B):
+        if b.is_final(B, state_tmp):
             return -1
         s = strategy_bleu(b, state_tmp, B, time_left)
-        new_state_gopher(state_tmp, s[1], B)
+        state_tmp = new_state_gopher(state_tmp, s[1], B)
         b.play(B, s[1])
         if debug:
             b.pplot()
-        if b.is_final(R):
+        if b.is_final(R, state_tmp):
             return 1

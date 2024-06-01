@@ -54,6 +54,15 @@ def start_board_gopher(size: int) -> State:
 def initialize(
     game: str, state: State, player: Player, hex_size: int, total_time: Time
 ) -> Environment:
+    '''
+
+    :param game:
+    :param state:
+    :param player:
+    :param hex_size:
+    :param total_time:
+    :return:
+    '''
     if game.lower() == "dodo":
         env = EngineDodo(state, hex_size, 100)
         env.generate_grid_heatmaps((3 * hex_size**2 - 3 * hex_size + 1) * 5)
@@ -76,7 +85,6 @@ def strategy_brain_dodo(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
     env.update_state(state)
-
     print("à vous de jouer: ", end="")
     src = input("Tuple source :")
     src = ast.literal_eval(src)
@@ -97,10 +105,25 @@ def strategy_brain_dodo(
     return env, (src_cell, dest_cell)
 
 
+
+
 def strategy_brain_gopher(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
-    pass
+    env.update_state(state)
+    print(list(env.legals(player, state)))
+    print("à vous de jouer " + str(player) + ": ", end="")
+    case = input("Tuple :")
+    case = ast.literal_eval(case)
+    case_cell: Cell = Cell(int(case[0]), int(case[1]))
+
+    while case_cell not in list(env.legals(player, state)):
+        print("Coup illégal !")
+        case = input("Tuple :")
+        case = ast.literal_eval(case)
+        case_cell = Cell(int(case[0]), int(case[1]))
+
+    return env, case_cell
 
 
 def strategy_random(
