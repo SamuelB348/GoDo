@@ -8,14 +8,14 @@ ActionGopher = Cell
 ActionDodo = tuple[Cell, Cell]
 Action = Union[ActionGopher, ActionDodo]
 Player = int
-R = 1
-B = 2
 State = list[tuple[Cell, Player]]
 Score = int
 Time = int
 
 # -------------------- Autres alias de types et constantes -------------------- #
 
+R = 1
+B = 2
 Grid = dict[Cell, Player]
 CellSet = set[Cell]
 Neighbors = dict[Cell, list[Cell]]
