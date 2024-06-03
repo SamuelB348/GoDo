@@ -168,7 +168,8 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
-    time_r: float = 120.0/4
+    # e1.MCTSearcher.state.pplot()
+    time_r: float = 120.0
     time_b: float = 120.0
     i = 0
     while True:
@@ -179,7 +180,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             print(1, end="")
             return 1
         time_r -= time.time() - start_time
-        if i % 1 == 0:
+        if i % 10 == 0:
             e1.MCTSearcher.state.pplot()
         new_state_dodo(state_tmp, s, R)
 
@@ -261,7 +262,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    dodo(4, 1, 1, 1, 1, 1, 1)
+    dodo(4, 1, 1, 2, 1, 1, 2)
     # tab = []
     # for _ in range(1):
     #     tab.append(dodo(4, 1, 1))

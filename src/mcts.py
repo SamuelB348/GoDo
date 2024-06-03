@@ -39,7 +39,19 @@ class MonteCarloTreeSearchNode:
         return self.untried_actions
 
     def expand(self) -> MonteCarloTreeSearchNode:
-        action: ActionDodo = self.untried_actions.pop()
+        max_heuristic = -10000
+        best_action = None
+        for act in self.untried_actions:
+            heur = len(self.state.move(act).generate_legal_actions(self.state.opponent)) - len(self.state.move(act).generate_legal_actions(self.state.player))
+            if heur > max_heuristic:
+                max_heuristic = heur
+                best_action = act
+        # print(best_action, max_heuristic)
+
+        # action: ActionDodo = self.untried_actions.pop()
+        action: ActionDodo = best_action
+        self.untried_actions.remove(best_action)
+
         next_state: GameStateDodo = self.state.move(action)
         child_node: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
             next_state, self.player, self.c, self.p, parent=self, parent_action=action
