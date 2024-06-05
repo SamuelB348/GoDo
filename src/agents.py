@@ -1,27 +1,27 @@
 import multiprocessing
 import cProfile
 import pstats
+import ast
 
 from mcts import *
 from utils import *
+from board_utils import BoardUtils
 
 
 class Engine:
     def __init__(
-        self, state: Grid, player: Player, hex_size: int, total_time: Time, c: float, p: float, f: float
+        self, state: State, player: Player, hex_size: int, total_time: Time, c: float, p: float, f: float
     ):
 
-        # -------------------- Attributs généraux -------------------- #
+        # -------------------- Basic attributes -------------------- #
 
         self.player: Player = player
         self.opponent: Player = R if self.player == B else B
         self.size: int = hex_size
 
-        # -------------------- Structures de données -------------------- #
+        # -------------------- Board utilities -------------------- #
 
-        self.CELLS: CellSet = self.generate_cells(hex_size)
-        self.R_POV_NEIGHBORS: Neighbors = self.generate_neighbors([1, 2, 3])
-        self.B_POV_NEIGHBORS: Neighbors = self.generate_neighbors([0, 4, 5])
+        self.board_utils = BoardUtils(hex_size, state)
 
         # -------------------- Monte Carlo Tree Searcher -------------------- #
 
@@ -30,12 +30,14 @@ class Engine:
         self.f: float = f
         self.MCTSearcher: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
             GameStateDodo(
-                state,
+                self.board_utils.state_to_dict(state),
                 R,
                 hex_size,
-                self.CELLS,
-                self.R_POV_NEIGHBORS,
-                self.B_POV_NEIGHBORS,
+                self.board_utils.R_POV_NEIGHBORS,
+                self.board_utils.B_POV_NEIGHBORS,
+                self.board_utils.CELL_KEYS,
+                self.board_utils.TURN_KEY,
+                self.board_utils.start_hash
             ),
             player,
             c,
@@ -47,43 +49,28 @@ class Engine:
         self.time: Time = total_time
         self.previous_mean_game_length: int = total_time
 
-    @staticmethod
-    def generate_cells(hex_size: int) -> CellSet:
-        grid = set()
-        n = hex_size - 1
-        for r in range(n, -n - 1, -1):
-            q1 = max(-n, r - n)
-            q2 = min(n, r + n)
-            for q in range(q1, q2 + 1):
-                grid.add(Cell(q, r))
-        return grid
-
-    def generate_neighbors(self, directions: list[int]) -> Neighbors:
-        return {
-            cell: [
-                neighbor(cell, i) for i in directions if neighbor(cell, i) in self.CELLS
-            ]
-            for cell in self.CELLS
-        }
-
-    def select_best_move(self, time_left: float) -> ActionDodo:
+    def return_best_move(self, time_left: float) -> ActionDodo:
         time_allocated: float = self.f * (time_left / self.previous_mean_game_length)
         best_children, mean_game_length = self.MCTSearcher.best_action(time_allocated)
         self.MCTSearcher = best_children
         self.MCTSearcher.parent = None
+
         if mean_game_length is not None:
             self.previous_mean_game_length = mean_game_length
-            print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
-        print(best_children)
+            # print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
+        # print(best_children)
+
         return best_children.parent_action
 
-    def update_state(self, grid: Grid):
+    def update_state(self, state: State):
+        grid = self.board_utils.state_to_dict(state)
         current_legals: list[ActionDodo] = self.MCTSearcher.state.get_legal_actions()
         has_played: Optional[ActionDodo] = None
         for legal in current_legals:
             if grid[legal[0]] == 0 and grid[legal[1]] == self.opponent:
                 has_played = legal
                 break
+
         if has_played in self.MCTSearcher.untried_actions:
             next_state = self.MCTSearcher.state.move(has_played)
             self.MCTSearcher = MonteCarloTreeSearchNode(
@@ -98,6 +85,7 @@ class Engine:
             for child in self.MCTSearcher.children:
                 if child.parent_action == has_played:
                     self.MCTSearcher = child
+                    self.MCTSearcher.parent = None
 
 
 Environment = Engine
@@ -119,28 +107,11 @@ def start_board_dodo(size: int) -> State:
     return grid
 
 
-def state_to_dict(state: State, size: int):
-    grid = {}
-    n = size - 1
-    for r in range(n, -n - 1, -1):
-        q1 = max(-n, r - n)
-        q2 = min(n, r + n)
-        for q in range(q1, q2 + 1):
-            if (Cell(q, r), R) in state:
-                grid[Cell(q, r)] = R
-            elif (Cell(q, r), B) in state:
-                grid[Cell(q, r)] = B
-            else:
-                grid[Cell(q, r)] = 0
-    return grid
-
-
 def initialize(
     game: str, state: State, player: Player, hex_size: int, total_time: Time, c: float, p: float, f: float
 ) -> Environment:
     if game.lower() == "dodo":
-        grid = state_to_dict(state, hex_size)
-        return Engine(grid, player, hex_size, total_time, c, p, f)
+        return Engine(state, player, hex_size, total_time, c, p, f)
     else:
         pass
 
@@ -148,11 +119,11 @@ def initialize(
 def strategy(
     env: Environment, state: State, player: Player, time_left: float
 ) -> tuple[Environment, Action]:
-    new_grid = state_to_dict(state, env.size)
-    env.update_state(new_grid)
+    env.update_state(state)
     if env.MCTSearcher.is_terminal_node():
-        return None
-    return env.select_best_move(time_left)
+        return env, None
+    best_action: Action = env.return_best_move(time_left)
+    return env, best_action
 
 
 def final_result(state: State, score: Score, player: Player):
@@ -167,32 +138,37 @@ def new_state_dodo(state: State, action: Action, player: Player):
 def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
-    e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
     # e1.MCTSearcher.state.pplot()
-    time_r: float = 120.0
-    time_b: float = 120.0
+    e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
+    time_r: float = 120.
+    time_b: float = 120.
     i = 0
     while True:
         start_time = time.time()
-        s = strategy(e1, state_tmp, e1.player, time_r)
+        s = strategy(e1, state_tmp, e1.player, time_r)[1]
         if s is None:
             e1.MCTSearcher.state.pplot()
             print(1, end="")
             return 1
         time_r -= time.time() - start_time
-        if i % 10 == 0:
-            e1.MCTSearcher.state.pplot()
+        # if i % 2 == 0:
+        #     e1.MCTSearcher.state.pplot()
         new_state_dodo(state_tmp, s, R)
 
         start_time = time.time()
-        s = strategy(e2, state_tmp, e2.player, time_b)
+        s = strategy(e2, state_tmp, e2.player, time_b)[1]
+        # src = input("Tuple source :")
+        # src = ast.literal_eval(src)
+        # dest = input("Tuple dest :")
+        # dest = ast.literal_eval(dest)
+        # s = (src, dest)
         if s is None:
             e2.MCTSearcher.state.pplot()
             print(2, end="")
             return -1
         time_b -= time.time() - start_time
         new_state_dodo(state_tmp, s, B)
-        i += 1
+        # i += 1
 
 
 def wrapper(args):
@@ -262,7 +238,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    dodo(4, 1, 1, 2, 1, 1, 2)
+    dodo(4, 1, "random", 2, 1, "anti-decisive", 2)
     # tab = []
     # for _ in range(1):
     #     tab.append(dodo(4, 1, 1))

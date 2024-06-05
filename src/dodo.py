@@ -15,17 +15,19 @@ class GameStateDodo:
         grid: Grid,
         player: Player,
         hex_size: int,
-        cells: CellSet,
         r_neighbors: Neighbors,
         b_neighbors: Neighbors,
+        zkeys,
+        turn_key,
+        state_hash
     ):
-        # -------------------- Attributs généraux -------------------- #
+        # -------------------- Basic attributes -------------------- #
 
-        self.player: Player = player
+        self.turn: Player = player
         self.opponent: Player = R if player == B else B
         self.size: int = hex_size
 
-        # -------------------- Structures de données -------------------- #
+        # -------------------- Board representation -------------------- #
 
         self.grid: Grid = grid
         self.R_POV_NEIGHBORS: Neighbors = r_neighbors
@@ -36,11 +38,13 @@ class GameStateDodo:
         self.B_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == B
         }
-        self.CELLS: CellSet = cells
+        self.zkeys = zkeys
+        self.turn_key = turn_key
+        self.hash = state_hash
 
-        # -------------------- Autres -------------------- #
+        # -------------------- Other -------------------- #
 
-        self.legals: list[ActionDodo] = self.generate_legal_actions(self.player)
+        self.legals: list[ActionDodo] = self.generate_legal_actions(self.turn)
         self.move_stack: deque[tuple[ActionDodo, Player]] = deque()
 
     def generate_legal_actions(self, player: Player) -> list[ActionDodo]:
@@ -64,19 +68,23 @@ class GameStateDodo:
 
     def game_result(self) -> Player:
         assert self.is_game_over()
-        return self.player
+        return self.turn
 
     def move(self, action: ActionDodo) -> GameStateDodo:
         new_grid: Grid = self.grid.copy()
         new_grid[action[0]] = 0
-        new_grid[action[1]] = self.player
+        new_grid[action[1]] = self.turn
+        act_keys = (self.zkeys[action[0]].R, self.zkeys[action[1]].R) if self.turn == R else (self.zkeys[action[0]].B, self.zkeys[action[1]].B)
+        new_hash = self.hash ^ act_keys[0] ^ act_keys[1] ^ self.turn_key
         return GameStateDodo(
             new_grid,
-            R if self.player == B else B,
+            R if self.turn == B else B,
             self.size,
-            self.CELLS,
             self.R_POV_NEIGHBORS,
             self.B_POV_NEIGHBORS,
+            self.zkeys,
+            self.turn_key,
+            new_hash
         )
 
     def simulate_game(self) -> tuple[Player, int]:
@@ -84,13 +92,14 @@ class GameStateDodo:
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
         game_length = 0
+
         while True:
-            legals: list[ActionDodo] = self.generate_legal_actions(self.player)
+            legals: list[ActionDodo] = self.generate_legal_actions(self.turn)
             if len(legals) == 0:
-                winner = self.player
+                winner = self.turn
                 break
             move: ActionDodo = random.choice(legals)
-            self.play(move, self.player)
+            self.play(move, self.turn)
             game_length += 1
 
             legals = self.generate_legal_actions(self.opponent)
@@ -119,6 +128,16 @@ class GameStateDodo:
         else:
             self.B_CELLS.add(action[1])
             self.B_CELLS.discard(action[0])
+
+    def undo(self, action, player):
+        self.grid[action[0]] = player
+        self.grid[action[1]] = 0
+        if player == R:
+            self.R_CELLS.add(action[0])
+            self.R_CELLS.discard(action[1])
+        else:
+            self.B_CELLS.add(action[0])
+            self.B_CELLS.discard(action[1])
 
     def undo_stack(self) -> None:
         while self.move_stack:

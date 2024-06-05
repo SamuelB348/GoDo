@@ -11,8 +11,11 @@ from gopher import *
 def argmax(seq):
     return max(range(len(seq)), key=seq.__getitem__)
 
+cache = {}
+cont = 0
 
 class MonteCarloTreeSearchNode:
+    final_flag = 0
     def __init__(
         self,
         state: GameStateDodo,
@@ -36,28 +39,25 @@ class MonteCarloTreeSearchNode:
 
     def initialize_actions(self) -> list[ActionDodo]:
         self.untried_actions = self.state.get_legal_actions().copy()
+        random.shuffle(self.untried_actions)
         return self.untried_actions
 
     def expand(self) -> MonteCarloTreeSearchNode:
-        max_heuristic = -10000
-        best_action = None
-        for act in self.untried_actions:
-            heur = len(self.state.move(act).generate_legal_actions(self.state.opponent)) - len(self.state.move(act).generate_legal_actions(self.state.player))
-            if heur > max_heuristic:
-                max_heuristic = heur
-                best_action = act
-        # print(best_action, max_heuristic)
-
-        # action: ActionDodo = self.untried_actions.pop()
-        action: ActionDodo = best_action
-        self.untried_actions.remove(best_action)
-
+        action: ActionDodo = self.untried_actions.pop()
         next_state: GameStateDodo = self.state.move(action)
         child_node: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
             next_state, self.player, self.c, self.p, parent=self, parent_action=action
         )
 
         self.children.append(child_node)
+        # if child_node.state.hash in cache:
+        #     cache[child_node.state.hash].pplot()
+        #     child_node.state.pplot()
+        #     global cont
+        #     cont += 1
+        #     print(cont)
+        # else:
+        #     cache[child_node.state.hash] = child_node.state
         return child_node
 
     def is_terminal_node(self) -> bool:
@@ -67,7 +67,7 @@ class MonteCarloTreeSearchNode:
         current_rollout_state: GameStateDodo = self.state
         result, game_length = current_rollout_state.simulate_game()
 
-        if result != self.state.player:  # Reward for the player who has played, not the one who must play
+        if result != self.state.turn:  # Reward for the player who has played, not the one who must play
             return 1, game_length
         return 0, game_length
 
@@ -116,24 +116,30 @@ class MonteCarloTreeSearchNode:
         simulation_count: int = 1
         start_time: float = time.time()
 
-        while time.time() - start_time < allocated_time:
+        # while time.time() - start_time < allocated_time:
+        for i in range(200):
             v: MonteCarloTreeSearchNode = self._tree_policy()
+            if v.is_terminal_node():
+                MonteCarloTreeSearchNode.final_flag = 1
             reward, game_length = v.rollout()
             v.backpropagate(reward)
 
             length_count += game_length
             simulation_count += 1
-            if simulation_count % 50 == 0:
-                first_visited, second_visited = self.get_two_most_visited()
-                time_spent = time.time() - start_time
-                time_left = allocated_time - time_spent
-                if simulation_count * (time_left/time_spent) * self.p < first_visited - second_visited:
-                    break
-                if first_visited > 100 and self.best_final_child().Q / first_visited > 0.98:
-                    break
+        if MonteCarloTreeSearchNode.final_flag == 1:
+            self.state.pplot()
+            print(length_count/simulation_count, self)
+        # if simulation_count % 50 == 0:
+        #     first_visited, second_visited = self.get_two_most_visited()
+        #     time_spent = time.time() - start_time
+        #     time_left = allocated_time - time_spent
+        #     if simulation_count * (time_left/time_spent) < first_visited - second_visited:
+        #         break
+        #     if first_visited > 100 and self.best_final_child().Q / first_visited > 0.98:
+        #         break
 
-        print(simulation_count)
-        return self.best_final_child(), max(int(length_count / simulation_count), 2)
+        # print(simulation_count)
+        return self.best_final_child(), max(int(length_count / simulation_count), 4)
 
     def get_two_most_visited(self):
         first_max = second_max = float('-inf')

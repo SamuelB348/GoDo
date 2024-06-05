@@ -1,4 +1,5 @@
 from typing import Union
+from collections import namedtuple
 from hex_tools import Cell
 
 
@@ -19,3 +20,4 @@ B = 2
 Grid = dict[Cell, Player]
 CellSet = set[Cell]
 Neighbors = dict[Cell, list[Cell]]
+zkey = namedtuple("zkey", ["R", "B"])
