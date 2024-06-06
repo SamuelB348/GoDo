@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-from collections import deque
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
@@ -19,7 +18,7 @@ class GameStateDodo:
         b_neighbors: Neighbors,
         zkeys,
         turn_key,
-        state_hash
+        state_hash,
     ):
         # -------------------- Basic attributes -------------------- #
 
@@ -45,7 +44,6 @@ class GameStateDodo:
         # -------------------- Other -------------------- #
 
         self.legals: list[ActionDodo] = self.generate_legal_actions(self.turn)
-        self.move_stack: deque[tuple[ActionDodo, Player]] = deque()
 
     def generate_legal_actions(self, player: Player) -> list[ActionDodo]:
         player_cells = self.R_CELLS if player == R else self.B_CELLS
@@ -57,7 +55,6 @@ class GameStateDodo:
             for nghb in neighbors[cell]
             if self.grid[nghb] == 0
         ]
-
         return legals
 
     def get_legal_actions(self) -> list[ActionDodo]:
@@ -74,7 +71,11 @@ class GameStateDodo:
         new_grid: Grid = self.grid.copy()
         new_grid[action[0]] = 0
         new_grid[action[1]] = self.turn
-        act_keys = (self.zkeys[action[0]].R, self.zkeys[action[1]].R) if self.turn == R else (self.zkeys[action[0]].B, self.zkeys[action[1]].B)
+        act_keys = (
+            (self.zkeys[action[0]].R, self.zkeys[action[1]].R)
+            if self.turn == R
+            else (self.zkeys[action[0]].B, self.zkeys[action[1]].B)
+        )
         new_hash = self.hash ^ act_keys[0] ^ act_keys[1] ^ self.turn_key
         return GameStateDodo(
             new_grid,
@@ -84,10 +85,10 @@ class GameStateDodo:
             self.B_POV_NEIGHBORS,
             self.zkeys,
             self.turn_key,
-            new_hash
+            new_hash,
         )
 
-    def simulate_game(self) -> tuple[Player, int]:
+    def simulate_game(self, p) -> tuple[Player, int]:
         tmp_grid = self.grid.copy()
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
@@ -98,7 +99,14 @@ class GameStateDodo:
             if len(legals) == 0:
                 winner = self.turn
                 break
-            move: ActionDodo = random.choice(legals)
+            if p:
+                move = random.choice(
+                    self.alphabeta_actions_v1(
+                        1, self.turn, float("-inf"), float("inf"), legals
+                    )[1]
+                )
+            else:
+                move: ActionDodo = random.choice(legals)
             self.play(move, self.turn)
             game_length += 1
 
@@ -106,20 +114,24 @@ class GameStateDodo:
             if len(legals) == 0:
                 winner = self.opponent
                 break
-            move = random.choice(legals)
+            if p:
+                move = random.choice(
+                    self.alphabeta_actions_v1(
+                        1, self.opponent, float("-inf"), float("inf"), legals
+                    )[1]
+                )
+            else:
+                move: ActionDodo = random.choice(legals)
             self.play(move, self.opponent)
             game_length += 1
 
-        # game_length: int = len(self.move_stack)
         self.grid = tmp_grid
         self.R_CELLS = tmp_r_cells
         self.B_CELLS = tmp_b_cells
-        # self.undo_stack()
 
         return winner, game_length
 
     def play(self, action, player) -> None:
-        # self.move_stack.append((action, player))
         self.grid[action[0]] = 0
         self.grid[action[1]] = player
         if player == R:
@@ -139,17 +151,89 @@ class GameStateDodo:
             self.B_CELLS.add(action[0])
             self.B_CELLS.discard(action[1])
 
-    def undo_stack(self) -> None:
-        while self.move_stack:
-            action, player = self.move_stack.pop()
-            self.grid[action[0]] = player
-            self.grid[action[1]] = 0
-            if player == R:
-                self.R_CELLS.discard(action[1])
-                self.R_CELLS.add(action[0])
-            else:
-                self.B_CELLS.remove(action[1])
-                self.B_CELLS.add(action[0])
+    def evaluate(self, legals, player):
+        if player == self.turn:
+            return len(self.generate_legal_actions(self.opponent)) - len(legals)
+        else:
+            return len(legals) - len(self.generate_legal_actions(self.turn))
+
+    def alphabeta(self, depth: int, player: Player, a: float, b: float) -> float:
+        legals = self.generate_legal_actions(player)
+        if len(legals) == 0:
+            return 10000 if player == self.turn else -10000
+        if depth == 0:
+            eval = self.evaluate(legals, player)
+            # print(eval)
+            return eval
+
+        if player == self.turn:
+            best_value = float("-inf")
+            for legal in legals:
+                self.play(legal, player)
+                best_value = max(
+                    best_value, self.alphabeta(depth - 1, self.opponent, a, b)
+                )
+                self.undo(legal, player)
+                a = max(a, best_value)
+                if a >= b:
+                    break  # β cut-off
+
+            return best_value
+        else:
+            best_value = float("inf")
+            for legal in legals:
+                self.play(legal, player)
+                best_value = min(best_value, self.alphabeta(depth - 1, self.turn, a, b))
+                self.undo(legal, player)
+                b = min(b, best_value)
+                if a >= b:
+                    break  # α cut-off
+
+            return best_value
+
+    def alphabeta_actions_v1(
+        self,
+        depth: int,
+        player: Player,
+        a: float,
+        b: float,
+        legals: list[ActionDodo],
+    ) -> tuple[float, list[ActionDodo]]:
+        if player == self.turn:
+            best_value = float("-inf")
+            best_legals: list[ActionDodo] = []
+            if len(legals) == 1:
+                return best_value, legals
+
+            for legal in legals:
+                self.play(legal, player)
+                v = self.alphabeta(depth - 1, self.opponent, a, b)
+                self.undo(legal, player)
+                if v > best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                a = max(a, best_value)
+            return best_value, best_legals
+        else:  # minimizing player
+            best_value = float("inf")
+            best_legals = []
+            if len(legals) == 1:
+                return best_value, legals
+
+            for legal in legals:
+                self.play(legal, player)
+                v = self.alphabeta(depth - 1, self.turn, a, b)
+                self.undo(legal, player)
+                if v < best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                b = min(b, best_value)
+
+            return best_value, best_legals
 
     def pplot(self) -> None:
         """
@@ -194,4 +278,3 @@ class GameStateDodo:
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
-

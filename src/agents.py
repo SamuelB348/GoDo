@@ -1,16 +1,25 @@
 import multiprocessing
 import cProfile
 import pstats
+from memory_profiler import profile
 import ast
 
 from mcts import *
 from utils import *
 from board_utils import BoardUtils
+import sys
 
 
 class Engine:
     def __init__(
-        self, state: State, player: Player, hex_size: int, total_time: Time, c: float, p: float, f: float
+        self,
+        state: State,
+        player: Player,
+        hex_size: int,
+        total_time: Time,
+        c: float,
+        p: float,
+        f: float,
     ):
 
         # -------------------- Basic attributes -------------------- #
@@ -37,11 +46,11 @@ class Engine:
                 self.board_utils.B_POV_NEIGHBORS,
                 self.board_utils.CELL_KEYS,
                 self.board_utils.TURN_KEY,
-                self.board_utils.start_hash
+                self.board_utils.start_hash,
             ),
             player,
             c,
-            p
+            p,
         )
 
         # -------------------- Time Management -------------------- #
@@ -53,12 +62,12 @@ class Engine:
         time_allocated: float = self.f * (time_left / self.previous_mean_game_length)
         best_children, mean_game_length = self.MCTSearcher.best_action(time_allocated)
         self.MCTSearcher = best_children
+        print(best_children)
         self.MCTSearcher.parent = None
 
         if mean_game_length is not None:
             self.previous_mean_game_length = mean_game_length
-            # print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
-        # print(best_children)
+            print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
 
         return best_children.parent_action
 
@@ -70,7 +79,6 @@ class Engine:
             if grid[legal[0]] == 0 and grid[legal[1]] == self.opponent:
                 has_played = legal
                 break
-
         if has_played in self.MCTSearcher.untried_actions:
             next_state = self.MCTSearcher.state.move(has_played)
             self.MCTSearcher = MonteCarloTreeSearchNode(
@@ -108,7 +116,14 @@ def start_board_dodo(size: int) -> State:
 
 
 def initialize(
-    game: str, state: State, player: Player, hex_size: int, total_time: Time, c: float, p: float, f: float
+    game: str,
+    state: State,
+    player: Player,
+    hex_size: int,
+    total_time: Time,
+    c: float,
+    p: float,
+    f: float,
 ) -> Environment:
     if game.lower() == "dodo":
         return Engine(state, player, hex_size, total_time, c, p, f)
@@ -138,10 +153,9 @@ def new_state_dodo(state: State, action: Action, player: Player):
 def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
-    # e1.MCTSearcher.state.pplot()
     e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
-    time_r: float = 120.
-    time_b: float = 120.
+    time_r: float = 140.0
+    time_b: float = 140.0
     i = 0
     while True:
         start_time = time.time()
@@ -151,8 +165,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             print(1, end="")
             return 1
         time_r -= time.time() - start_time
-        # if i % 2 == 0:
-        #     e1.MCTSearcher.state.pplot()
+        print(time_r)
         new_state_dodo(state_tmp, s, R)
 
         start_time = time.time()
@@ -168,7 +181,6 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             return -1
         time_b -= time.time() - start_time
         new_state_dodo(state_tmp, s, B)
-        # i += 1
 
 
 def wrapper(args):
@@ -238,19 +250,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    dodo(4, 1, "random", 2, 1, "anti-decisive", 2)
-    # tab = []
-    # for _ in range(1):
-    #     tab.append(dodo(4, 1, 1))
-    # print(tab.count(1), tab.count(-1))
-    # plt.plot(sum_lists(tab))
-    # plt.show()
-
-    # v = []
-    # for f in [10., 2.0, 3.5, 4.0, 5.0]:
-    #     v.append(match(100, 4, 1, 1, f, 1, 1, 1)[0])
-    # plt.plot(v)
-    # plt.show()
+    dodo(4, 1, False, 2, 1, False, 2)
 
 
 if __name__ == "__main__":
