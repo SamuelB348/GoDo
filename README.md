@@ -6,3 +6,5 @@ IA pour les jeux ["Dodo"](https://www.marksteeregames.com/Dodo_rules.pdf) et ["G
 - [ ] Améliorer la fonction d'évaluation
 - [ ] Prendre en compte le paramètre time dans les méthodes
 - [ ] Améliorer le parcours d'états
+
+ressources : https://www.moderndescartes.com/essays/deep_dive_mcts/ 
