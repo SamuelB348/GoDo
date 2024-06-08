@@ -1,6 +1,6 @@
 # AI for the games of Dodo and Gopher
 
-This repository contains the code for two AI game agents: one for ["Dodo"](https://www.marksteeregames.com/Dodo_rules.pdf) and the other for ["Gopher"](https://www.marksteeregames.com/Gopher_hex_rules.pdf). These are 2 Mark Steere games.
+This repository contains the code for two AI game agents: one for ["Dodo"](https://www.marksteeregames.com/Dodo_rules.pdf) and the other for ["Gopher"](https://www.marksteeregames.com/Gopher_hex_rules.pdf). These are 2 Mark Steere games :red_circle: :large_blue_circle:.
 
 ## Some of the Features
 - MCTS: the two agents rely on the MCTS research algorithm. Our implementation is based on the UCT for a smarter exploration and exploitation balance, compared to the simple "vanilla" MCTS.
