@@ -9,8 +9,13 @@ This repository contains the code for two AI game agents: one for ["Dodo"](https
 - :clipboard: **Transposition table**: Our algorithm keeps track of the previously seen positions. Therefore if you reencounter a position due to a transposition, previous results will be added to the current one to gather even more data.
 - :hourglass: **Smart time management**: our time management method is based on [this paper](https://dke.maastrichtuniversity.nl/m.winands/documents/time_management_for_monte_carlo_tree_search.pdf). It calculates the expected number of moves left until the end of the game to adapt its allowed time. It also uses early stop conditions to stop the search if no better solution can be found during the next expected iterations.
 
+## Tech used
 
-[this article](https://www.redblobgames.com/grids/hexagons/) pour la gestion des grilles hexagonales.
+These AIs are fully written in Python 3 :snake: essentially for readability and ease of programming.
+
+## Credits
+- Thanks to [Mark Steere](https://www.marksteeregames.com/) for these 2 great games that were fun to program.
+- A big thanks to [this article](https://www.redblobgames.com/grids/hexagons/) that helped us understand hexagonal grids and their representations.
 
 ## Choses à faire:
 - [ ] Améliorer la fonction d'évaluation
