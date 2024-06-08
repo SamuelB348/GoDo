@@ -16,8 +16,3 @@ These AIs are fully written in Python 3 :snake: essentially for readability and 
 ## Credits
 - Thanks to [Mark Steere](https://www.marksteeregames.com/) for these 2 great games that were fun to program.
 - A big thanks to [this article](https://www.redblobgames.com/grids/hexagons/) that helped us understand hexagonal grids and their representations.
-
-## Choses à faire:
-- [ ] Améliorer la fonction d'évaluation
-- [ ] Prendre en compte le paramètre time dans les méthodes
-- [ ] Améliorer le parcours d'états
