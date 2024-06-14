@@ -1,7 +1,6 @@
 import multiprocessing
 import cProfile
 import pstats
-from memory_profiler import profile
 import ast
 
 from mcts import *
@@ -154,8 +153,8 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
-    time_r: float = 140.0
-    time_b: float = 140.0
+    time_r: float = 120.0
+    time_b: float = 120.0
     i = 0
     while True:
         start_time = time.time()

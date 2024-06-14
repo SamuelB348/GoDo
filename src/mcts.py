@@ -24,7 +24,6 @@ class MonteCarloTreeSearchNode:
         parent_action: Optional[Action] = None,
     ):
         self.state: GameStateDodo = state
-
         self.parent: Optional[MonteCarloTreeSearchNode] = parent
         self.parent_action: Optional[Action] = parent_action
 
