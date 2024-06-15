@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from typing import Optional
-import collections
 import numpy as np
 
 from dodo import *
@@ -119,11 +118,12 @@ class MonteCarloTreeSearchNode:
             length_count += game_length
             simulation_count += 1
 
-            if simulation_count % 50 == 0:
+            if simulation_count % 200 == 0:
                 first_visited, second_visited = self.get_two_most_visited()
                 time_spent = time.time() - start_time
                 time_left = allocated_time - time_spent
                 if simulation_count * (time_left/time_spent) < first_visited - second_visited:
+                    print(time_left)
                     break
                 if first_visited > 100 and self.best_final_child().Q / first_visited > 0.98:
                     break

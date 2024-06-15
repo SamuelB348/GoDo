@@ -106,9 +106,9 @@ class GameStateGopher:
         new_grid: Grid = self.grid.copy()
         new_grid[action] = self.turn
         act_keys = (
-            (self.zkeys[action].R)
+            self.zkeys[action].R
             if self.turn == R
-            else (self.zkeys[action].B)
+            else self.zkeys[action].B
         )
         new_hash = self.hash ^ act_keys ^ self.turn_key
         return GameStateGopher(
@@ -126,6 +126,8 @@ class GameStateGopher:
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
         tmp_empty_cells = self.EMPTY_CELLS.copy()
+        was_empty = self.is_empty
+        self.is_empty = False
         game_length = 0
 
         while True:
@@ -163,6 +165,7 @@ class GameStateGopher:
         self.R_CELLS = tmp_r_cells
         self.B_CELLS = tmp_b_cells
         self.EMPTY_CELLS = tmp_empty_cells
+        self.is_empty = was_empty
 
         return winner, game_length
 
@@ -184,9 +187,9 @@ class GameStateGopher:
         
     def evaluate(self, legals, player):
         if player == self.turn:
-            return len(self.generate_legal_actions(self.opponent)) - len(legals)
+            return len(legals) - len(self.generate_legal_actions(self.opponent))
         else:
-            return len(legals) - len(self.generate_legal_actions(self.turn))
+            return len(self.generate_legal_actions(self.turn)) - len(legals)
 
     def alphabeta(self, depth: int, player: Player, a: float, b: float) -> float:
         legals = self.generate_legal_actions(player)
