@@ -174,6 +174,14 @@ class GameStateGopher:
             self.B_CELLS.add(action)
         self.EMPTY_CELLS.discard(action)
 
+    def undo(self, action, player):
+        self.grid[action] = 0
+        if player == R:
+            self.R_CELLS.discard(action)
+        else:
+            self.B_CELLS.discard(action)
+        self.EMPTY_CELLS.add(action)
+
    
     def pplot(self) -> None:
         """
