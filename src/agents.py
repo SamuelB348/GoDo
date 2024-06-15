@@ -183,8 +183,8 @@ def start_board_dodo(size: int) -> State:
                 grid.append((Cell(q, r), R))
             elif r > -q + (size - 3):
                 grid.append((Cell(q, r), B))
-            # else:
-            #     grid.append((Cell(q, r), 0))
+            else:
+                grid.append((Cell(q, r), 0))
     return grid
 
 
@@ -231,7 +231,9 @@ def final_result(state: State, score: Score, player: Player):
 
 def new_state_dodo(state: State, action: Action, player: Player):
     state.remove((action[0], player))
+    state.append((action[0], 0))
     state.append((action[1], player))
+    state.remove((action[1], 0))
 
 
 def new_state_gopher(state: State, action: Action, player: Player):
@@ -255,7 +257,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
         time_r -= time.time() - start_time
         print(time_r)
         new_state_dodo(state_tmp, s, R)
-
+        e1.MCTSearcher.state.pplot()
         start_time = time.time()
         s = strategy(e2, state_tmp, e2.player, time_b)[1]
         # src = input("Tuple source :")
@@ -277,8 +279,7 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
     e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
     time_r: float = 120.0
     time_b: float = 120.0
-    i = 0
-    e1.MCTSearcher.state.pplot()
+
     while True:
         start_time = time.time()
         s = strategy(e1, state_tmp, e1.player, time_r)[1]
@@ -372,8 +373,8 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    # dodo(4, 1, False, 2, 1, False, 2)
-    gopher(6, 1, False, 2, 1, False, 2)
+    dodo(4, 1, True, 2, 1, False, 2)
+    # gopher(6, 1, False, 2, 1, False, 2)
 
 
 if __name__ == "__main__":
