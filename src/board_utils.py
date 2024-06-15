@@ -9,6 +9,7 @@ class BoardUtils:
         self.CELLS = self.generate_cells(self.size)
         self.R_POV_NEIGHBORS = self.generate_neighbors([1, 2, 3])
         self.B_POV_NEIGHBORS = self.generate_neighbors([0, 4, 5])
+        self.NEIGHBORS = self.generate_neighbors([0, 1, 2, 3, 4, 5])
         self.CELL_KEYS, self.TURN_KEY = self.generate_zobrist_keys()
         self.start_hash = self.compute_start_hash(state)
 

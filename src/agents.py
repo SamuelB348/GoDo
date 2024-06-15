@@ -127,8 +127,7 @@ class EngineGopher:
                 self.board_utils.state_to_dict(state),
                 R,
                 hex_size,
-                self.board_utils.R_POV_NEIGHBORS,
-                self.board_utils.B_POV_NEIGHBORS,
+                self.board_utils.NEIGHBORS,
                 self.board_utils.CELL_KEYS,
                 self.board_utils.TURN_KEY,
                 self.board_utils.start_hash,
@@ -287,8 +286,8 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_gopher(size)
     e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
     e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
-    time_r: float = 30.0
-    time_b: float = 30.0
+    time_r: float = 120.0
+    time_b: float = 120.0
     i = 0
     e1.MCTSearcher.state.pplot()
     while True:

@@ -15,8 +15,7 @@ class GameStateGopher:
         grid: Grid,
         player: Player,
         hex_size: int,
-        r_neighbors: Neighbors,
-        b_neighbors: Neighbors,
+        neighbors: Neighbors,
         zkeys,
         turn_key,
         state_hash,
@@ -29,8 +28,7 @@ class GameStateGopher:
 
         # -------------------- Board representation -------------------- #
         self.grid: Grid = grid
-        self.R_POV_NEIGHBORS: Neighbors = r_neighbors
-        self.B_POV_NEIGHBORS: Neighbors = b_neighbors
+        self.NEIGHBORS: Neighbors = neighbors
         self.R_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == R
         }
@@ -61,14 +59,11 @@ class GameStateGopher:
             for box in self.EMPTY_CELLS:
                 nb_neighbors = 0
                 info_rouge = False
-                for i in [0, 1, 2, 3, 4, 5]:
-                    if neighbor(box, i) in self.grid and self.grid[neighbor(box, i)] == R:
+                for nghb in self.NEIGHBORS[box]:
+                    if self.grid[nghb] == R:
                         info_rouge = True
                         break
-                    elif (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == B
-                    ):
+                    elif self.grid[nghb] == B:
                         nb_neighbors += 1
                 if self.is_empty:
                     legals.append(box)
@@ -78,14 +73,11 @@ class GameStateGopher:
             for box in self.EMPTY_CELLS:
                 nb_neighbors = 0
                 info_bleu = False
-                for i in [0, 1, 2, 3, 4, 5]:
-                    if neighbor(box, i) in self.grid and self.grid[neighbor(box, i)] == B:
+                for nghb in self.NEIGHBORS[box]:
+                    if self.grid[nghb] == B:
                         info_bleu = True
                         break
-                    elif (
-                            neighbor(box, i) in self.grid
-                            and self.grid[neighbor(box, i)] == R
-                    ):
+                    elif self.grid[nghb] == R:
                         nb_neighbors += 1
                 if 0 < nb_neighbors < 2 and not info_bleu:
                     legals.append(box)
@@ -114,8 +106,7 @@ class GameStateGopher:
             new_grid,
             R if self.turn == B else B,
             self.size,
-            self.R_POV_NEIGHBORS,
-            self.B_POV_NEIGHBORS,
+            self.NEIGHBORS,
             self.zkeys,
             self.turn_key,
             new_hash,
@@ -132,7 +123,7 @@ class GameStateGopher:
         while True:
             legals: list[ActionGopher] = self.generate_legal_actions(self.turn)
             if len(legals) == 0:
-                winner = self.turn
+                winner = self.opponent
                 break
             if p:
                 move = random.choice(
@@ -147,7 +138,7 @@ class GameStateGopher:
 
             legals = self.generate_legal_actions(self.opponent)
             if len(legals) == 0:
-                winner = self.opponent
+                winner = self.turn
                 break
             if p:
                 move = random.choice(
