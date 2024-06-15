@@ -54,34 +54,43 @@ class GameStateGopher:
         return True
         
     def generate_legal_actions(self, player: Player) -> list[ActionGopher]:
-        legals: list[ActionGopher] = []
-        if player == R:
-            for box in self.EMPTY_CELLS:
-                nb_neighbors = 0
-                info_rouge = False
-                for nghb in self.NEIGHBORS[box]:
-                    if self.grid[nghb] == R:
-                        info_rouge = True
-                        break
-                    elif self.grid[nghb] == B:
-                        nb_neighbors += 1
-                if self.is_empty:
-                    legals.append(box)
-                elif 0 < nb_neighbors < 2 and not info_rouge:
-                    legals.append(box)
-        elif player == B:
-            for box in self.EMPTY_CELLS:
-                nb_neighbors = 0
-                info_bleu = False
-                for nghb in self.NEIGHBORS[box]:
-                    if self.grid[nghb] == B:
-                        info_bleu = True
-                        break
-                    elif self.grid[nghb] == R:
-                        nb_neighbors += 1
-                if 0 < nb_neighbors < 2 and not info_bleu:
-                    legals.append(box)
+        legals = []
+        opponent_cells, opponent = (self.R_CELLS, R) if player == B else (self.B_CELLS, B)
+
+        if player == R and self.is_empty:
+            return list(self.EMPTY_CELLS)
+
+        for box in opponent_cells:
+            for nghb in self.NEIGHBORS[box]:
+                if self.grid[nghb] == 0:
+                    is_valid = True
+                    for nghb_bis in self.NEIGHBORS[nghb]:
+                        if self.grid[nghb_bis] == opponent and nghb_bis != box:
+                            is_valid = False
+                            break
+                        if self.grid[nghb_bis] == player:
+                            is_valid = False
+                            break
+                    if is_valid:
+                        legals.append(nghb)
         return legals
+        # for box in self.EMPTY_CELLS:
+        #     nb_neighbors = 0
+        #     info_player = False
+        #
+        #     for nghb in self.NEIGHBORS[box]:
+        #         if self.grid[nghb] == player:
+        #             info_player = True
+        #             break
+        #         elif self.grid[nghb] == opponent:
+        #             nb_neighbors += 1
+        #
+        #     if self.is_empty:
+        #         legals.append(box)
+        #     elif nb_neighbors == 1 and not info_player:
+        #         legals.append(box)
+        #
+        # return legals
 
     def get_legal_actions(self) -> list[ActionGopher]:
         return self.legals
@@ -111,7 +120,6 @@ class GameStateGopher:
             self.turn_key,
             new_hash,
         )
-        
 
     def simulate_game(self, p) -> tuple[Player, int]:
         tmp_grid = self.grid.copy()
@@ -305,12 +313,12 @@ class GameStateGopher:
                     linewidth=2,
                 )
             plt.gca().add_patch(polygon)
-            plt.text(
-                center.x,
-                center.y,
-                f"{box.q}, {box.r}",
-                horizontalalignment="right",
-            )
+            # plt.text(
+            #     center.x,
+            #     center.y,
+            #     f"{box.q}, {box.r}",
+            #     horizontalalignment="right",
+            # )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()
