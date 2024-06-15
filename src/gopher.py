@@ -116,7 +116,7 @@ class GameStateGopher:
         )
         
 
-    def simulate_game(self) -> tuple[Player, int]: ##Je termine après
+    def simulate_game(self) -> tuple[Player, int]: 
         tmp_grid = self.grid.copy()
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
