@@ -30,6 +30,8 @@ class GameStateGopher:
 
         # -------------------- Board representation -------------------- #
         self.grid: Grid = grid
+        self.R_POV_NEIGHBORS: Neighbors = r_neighbors
+        self.B_POV_NEIGHBORS: Neighbors = b_neighbors
         self.R_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == R
         }
@@ -93,8 +95,26 @@ class GameStateGopher:
         assert self.is_game_over()
         return self.turn
 
-    def move(self, action: ActionDodo) -> GameStateDodo:
-        pass
+    def move(self, action: ActionGopher) -> GameStateGopher:
+        new_grid: Grid = self.grid.copy()
+        new_grid[action] = self.turn
+        act_keys = (
+            (self.zkeys[action].R)
+            if self.turn == R
+            else (self.zkeys[action].B)
+        )
+        new_hash = self.hash ^ act_keys ^ self.turn_key
+        return GameStateGopher(
+            new_grid,
+            R if self.turn == B else B,
+            self.size,
+            self.R_POV_NEIGHBORS,
+            self.B_POV_NEIGHBORS,
+            self.zkeys,
+            self.turn_key,
+            new_hash,
+        )
+        
 
     def simulate_game(self) -> tuple[Player, int]: ##Je termine après
         tmp_grid = self.grid.copy()
@@ -141,7 +161,11 @@ class GameStateGopher:
 
     def play(self, action, player) -> None:
         self.grid[action] = player
-        self.update_sets(player, action) ##Pas sur que la fonction existe ducoup
+        if player == R:
+            self.R_CELLS.add(action)
+        else:
+            self.B_CELLS.add(action)
+        self.Empty_hex.discard(action)
 
    
     def pplot(self) -> None:
