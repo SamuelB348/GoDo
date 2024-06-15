@@ -182,6 +182,91 @@ class GameStateGopher:
         else:
             self.B_CELLS.discard(action)
         self.EMPTY_CELLS.add(action)
+        
+    def evaluate(self, legals, player):
+        if player == self.turn:
+            return len(self.generate_legal_actions(self.opponent)) - len(legals)
+        else:
+            return len(legals) - len(self.generate_legal_actions(self.turn))
+
+    def alphabeta(self, depth: int, player: Player, a: float, b: float) -> float:
+        legals = self.generate_legal_actions(player)
+        if len(legals) == 0:
+            return 10000 if player == self.turn else -10000
+        if depth == 0:
+            eval = self.evaluate(legals, player)
+            # print(eval)
+            return eval
+
+        if player == self.turn:
+            best_value = float("-inf")
+            for legal in legals:
+                self.play(legal, player)
+                best_value = max(
+                    best_value, self.alphabeta(depth - 1, self.opponent, a, b)
+                )
+                self.undo(legal, player)
+                a = max(a, best_value)
+                if a >= b:
+                    break  # β cut-off
+
+            return best_value
+        else:
+            best_value = float("inf")
+            for legal in legals:
+                self.play(legal, player)
+                best_value = min(best_value, self.alphabeta(depth - 1, self.turn, a, b))
+                self.undo(legal, player)
+                b = min(b, best_value)
+                if a >= b:
+                    break  # α cut-off
+
+            return best_value 
+
+    def alphabeta_actions_v1(
+        self,
+        depth: int,
+        player: Player,
+        a: float,
+        b: float,
+        legals: list[ActionGopher],
+    ) -> tuple[float, list[ActionGopher]]:
+        if player == self.turn:
+            best_value = float("-inf")
+            best_legals: list[ActionGopher] = []
+            if len(legals) == 1:
+                return best_value, legals
+
+            for legal in legals:
+                self.play(legal, player)
+                v = self.alphabeta(depth - 1, self.opponent, a, b)
+                self.undo(legal, player)
+                if v > best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                a = max(a, best_value)
+            return best_value, best_legals
+        else:  # minimizing player
+            best_value = float("inf")
+            best_legals = []
+            if len(legals) == 1:
+                return best_value, legals
+
+            for legal in legals:
+                self.play(legal, player)
+                v = self.alphabeta(depth - 1, self.turn, a, b)
+                self.undo(legal, player)
+                if v < best_value:
+                    best_value = v
+                    best_legals = [legal]
+                elif v == best_value:
+                    best_legals.append(legal)
+                b = min(b, best_value)
+
+            return best_value, best_legals
+
 
    
     def pplot(self) -> None:
