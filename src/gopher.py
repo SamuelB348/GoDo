@@ -30,6 +30,15 @@ class GameStateGopher:
 
         # -------------------- Board representation -------------------- #
         self.grid: Grid = grid
+        self.R_CELLS: CellSet = {
+            cell for cell, player in self.grid.items() if player == R
+        }
+        self.B_CELLS: CellSet = {
+            cell for cell, player in self.grid.items() if player == B
+        }
+        self.EMPTY_CELLS: set[Cell] = {
+            cell for cell, player in self.grid.items() if player == 0
+        }
         self.zkeys = zkeys
         self.turn_key = turn_key
         self.hash = state_hash
