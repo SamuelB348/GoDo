@@ -95,7 +95,93 @@ class Engine:
                     self.MCTSearcher.parent = None
 
 
-Environment = Engine
+class EngineGopher:
+    def __init__(
+        self,
+        state: State,
+        player: Player,
+        hex_size: int,
+        total_time: Time,
+        c: float,
+        p: float,
+        f: float,
+    ):
+
+        # -------------------- Basic attributes -------------------- #
+
+        self.player: Player = player
+        self.opponent: Player = R if self.player == B else B
+        self.size: int = hex_size
+
+        # -------------------- Board utilities -------------------- #
+
+        self.board_utils = BoardUtils(hex_size, state)
+
+        # -------------------- Monte Carlo Tree Searcher -------------------- #
+
+        self.c: float = c
+        self.p: float = p
+        self.f: float = f
+        self.MCTSearcher: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
+            GameStateGopher(
+                self.board_utils.state_to_dict(state),
+                R,
+                hex_size,
+                self.board_utils.R_POV_NEIGHBORS,
+                self.board_utils.B_POV_NEIGHBORS,
+                self.board_utils.CELL_KEYS,
+                self.board_utils.TURN_KEY,
+                self.board_utils.start_hash,
+            ),
+            player,
+            c,
+            p,
+        )
+
+        # -------------------- Time Management -------------------- #
+
+        self.time: Time = total_time
+        self.previous_mean_game_length: int = total_time
+
+    def return_best_move(self, time_left: float) -> ActionDodo:
+        time_allocated: float = self.f * (time_left / self.previous_mean_game_length)
+        best_children, mean_game_length = self.MCTSearcher.best_action(time_allocated)
+        self.MCTSearcher = best_children
+        print(best_children)
+        self.MCTSearcher.parent = None
+
+        if mean_game_length is not None:
+            self.previous_mean_game_length = mean_game_length
+            print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
+
+        return best_children.parent_action
+
+    def update_state(self, state: State):
+        grid = self.board_utils.state_to_dict(state)
+        current_legals: list[ActionDodo] = self.MCTSearcher.state.get_legal_actions()
+        has_played: Optional[ActionDodo] = None
+        for legal in current_legals:
+            if grid[legal] == self.opponent:
+                has_played = legal
+                break
+        if has_played in self.MCTSearcher.untried_actions:
+            next_state = self.MCTSearcher.state.move(has_played)
+            self.MCTSearcher = MonteCarloTreeSearchNode(
+                next_state,
+                self.player,
+                self.c,
+                self.p,
+                parent=self.MCTSearcher,
+                parent_action=has_played,
+            )
+        else:
+            for child in self.MCTSearcher.children:
+                if child.parent_action == has_played:
+                    self.MCTSearcher = child
+                    self.MCTSearcher.parent = None
+
+
+Environment = Union[Engine, EngineGopher]
 
 
 def start_board_dodo(size: int) -> State:
@@ -114,6 +200,17 @@ def start_board_dodo(size: int) -> State:
     return grid
 
 
+def start_board_gopher(size: int) -> State:
+    grid: State = []
+    n = size - 1
+    for r in range(n, -n - 1, -1):
+        q1 = max(-n, r - n)
+        q2 = min(n, r + n)
+        for q in range(q1, q2 + 1):
+            grid.append((Cell(q, r), 0))
+    return grid
+
+
 def initialize(
     game: str,
     state: State,
@@ -127,7 +224,7 @@ def initialize(
     if game.lower() == "dodo":
         return Engine(state, player, hex_size, total_time, c, p, f)
     else:
-        pass
+        return EngineGopher(state, player, hex_size, total_time, c, p, f)
 
 
 def strategy(
@@ -147,6 +244,10 @@ def final_result(state: State, score: Score, player: Player):
 def new_state_dodo(state: State, action: Action, player: Player):
     state.remove((action[0], player))
     state.append((action[1], player))
+
+
+def new_state_gopher(state: State, action: Action, player: Player):
+    state.append((action, player))
 
 
 def dodo(size: int, c1, p1, f1, c2, p2, f2):
@@ -180,6 +281,42 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             return -1
         time_b -= time.time() - start_time
         new_state_dodo(state_tmp, s, B)
+
+
+def gopher(size: int, c1, p1, f1, c2, p2, f2):
+    state_tmp = start_board_gopher(size)
+    e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
+    e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
+    time_r: float = 30.0
+    time_b: float = 30.0
+    i = 0
+    e1.MCTSearcher.state.pplot()
+    while True:
+        start_time = time.time()
+        s = strategy(e1, state_tmp, e1.player, time_r)[1]
+        if s is None:
+            e1.MCTSearcher.state.pplot()
+            print(2, end="")
+            return -1
+        time_r -= time.time() - start_time
+        print(time_r)
+        new_state_gopher(state_tmp, s, R)
+        e1.MCTSearcher.state.pplot()
+
+        start_time = time.time()
+        s = strategy(e2, state_tmp, e2.player, time_b)[1]
+        # src = input("Tuple source :")
+        # src = ast.literal_eval(src)
+        # dest = input("Tuple dest :")
+        # dest = ast.literal_eval(dest)
+        # s = (src, dest)
+        if s is None:
+            e2.MCTSearcher.state.pplot()
+            print(1, end="")
+            return 1
+        time_b -= time.time() - start_time
+        new_state_gopher(state_tmp, s, B)
+        e2.MCTSearcher.state.pplot()
 
 
 def wrapper(args):
@@ -249,7 +386,8 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    dodo(4, 1, False, 2, 1, False, 2)
+    # dodo(4, 1, False, 2, 1, False, 2)
+    gopher(6, 1, False, 2, 1, False, 2)
 
 
 if __name__ == "__main__":

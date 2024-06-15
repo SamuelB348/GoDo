@@ -16,14 +16,14 @@ def argmax(seq):
 class MonteCarloTreeSearchNode:
     def __init__(
         self,
-        state: GameStateDodo,
+        state,
         player: Player,
         c: float,
         p: float,
         parent=None,
         parent_action: Optional[Action] = None,
     ):
-        self.state: GameStateDodo = state
+        self.state = state
         self.parent: Optional[MonteCarloTreeSearchNode] = parent
         self.parent_action: Optional[Action] = parent_action
 
@@ -46,7 +46,7 @@ class MonteCarloTreeSearchNode:
 
     def expand(self) -> MonteCarloTreeSearchNode:
         action: ActionDodo = self.untried_actions.pop()
-        next_state: GameStateDodo = self.state.move(action)
+        next_state = self.state.move(action)
         child_node: MonteCarloTreeSearchNode = MonteCarloTreeSearchNode(
             next_state, self.player, self.c, self.p, parent=self, parent_action=action
         )

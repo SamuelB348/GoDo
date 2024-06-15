@@ -15,7 +15,6 @@ class GameStateGopher:
         grid: Grid,
         player: Player,
         hex_size: int,
-        cells: CellSet,
         r_neighbors: Neighbors,
         b_neighbors: Neighbors,
         zkeys,
@@ -47,13 +46,14 @@ class GameStateGopher:
 
         # -------------------- Autres -------------------- #
 
-        self.legals: list[ActionGopher] = self.generate_legal_actions(self.player)
+        self.is_empty = self.empty_grid()
+        self.legals: list[ActionGopher] = self.generate_legal_actions(self.turn)
 
     def empty_grid(self) -> bool:
         for cell in self.grid:
-            if cell[1] != 0:
+            if self.grid[cell] != 0:
                 return False
-    return True
+        return True
         
     def generate_legal_actions(self, player: Player) -> list[ActionGopher]:
         legals: list[ActionGopher] = []
@@ -70,7 +70,7 @@ class GameStateGopher:
                             and self.grid[neighbor(box, i)] == B
                     ):
                         nb_neighbors += 1
-                if self.empty_grid(grid):
+                if self.is_empty:
                     legals.append(box)
                 elif 0 < nb_neighbors < 2 and not info_rouge:
                     legals.append(box)
@@ -122,7 +122,7 @@ class GameStateGopher:
         )
         
 
-    def simulate_game(self) -> tuple[Player, int]: 
+    def simulate_game(self, p) -> tuple[Player, int]:
         tmp_grid = self.grid.copy()
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
@@ -163,6 +163,7 @@ class GameStateGopher:
         self.grid = tmp_grid
         self.R_CELLS = tmp_r_cells
         self.B_CELLS = tmp_b_cells
+        self.EMPTY_CELLS = tmp_empty_cells
 
         return winner, game_length
 
