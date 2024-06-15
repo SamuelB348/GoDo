@@ -18,12 +18,21 @@ class GameStateGopher:
         cells: CellSet,
         r_neighbors: Neighbors,
         b_neighbors: Neighbors,
+        zkeys,
+        turn_key,
+        state_hash,
     ):
         # -------------------- Attributs généraux -------------------- #
 
         self.turn: Player = player
         self.opponent: Player = R if player == B else B
         self.size: int = hex_size
+
+        # -------------------- Board representation -------------------- #
+        self.grid: Grid = grid
+        self.zkeys = zkeys
+        self.turn_key = turn_key
+        self.hash = state_hash
 
         # -------------------- Autres -------------------- #
 
@@ -125,9 +134,7 @@ class GameStateGopher:
         self.grid[action] = player
         self.update_sets(player, action) ##Pas sur que la fonction existe ducoup
 
-    def undo_stack(self) -> None:
-        pass
-
+   
     def pplot(self) -> None:
         """
         Produit un affichage graphique de la grille de jeu actuelle.
