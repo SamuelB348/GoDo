@@ -126,6 +126,7 @@ class GameStateGopher:
         tmp_grid = self.grid.copy()
         tmp_r_cells = self.R_CELLS.copy()
         tmp_b_cells = self.B_CELLS.copy()
+        tmp_empty_cells = self.EMPTY_CELLS.copy()
         game_length = 0
 
         while True:
@@ -155,7 +156,7 @@ class GameStateGopher:
                     )[1]
                 )
             else:
-                move: ActionDodo = random.choice(legals)
+                move: ActionGopher = random.choice(legals)
             self.play(move, self.opponent)
             game_length += 1
 
@@ -171,7 +172,7 @@ class GameStateGopher:
             self.R_CELLS.add(action)
         else:
             self.B_CELLS.add(action)
-        self.Empty_hex.discard(action)
+        self.EMPTY_CELLS.discard(action)
 
    
     def pplot(self) -> None:
