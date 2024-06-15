@@ -38,7 +38,7 @@ class GameStateGopher:
         self.B_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == B
         }
-        self.EMPTY_CELLS: set[Cell] = {
+        self.EMPTY_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == 0
         }
         self.zkeys = zkeys
@@ -49,10 +49,16 @@ class GameStateGopher:
 
         self.legals: list[ActionGopher] = self.generate_legal_actions(self.player)
 
+    def empty_grid(self) -> bool:
+        for cell in self.grid:
+            if cell[1] != 0:
+                return False
+    return True
+        
     def generate_legal_actions(self, player: Player) -> list[ActionGopher]:
         legals: list[ActionGopher] = []
         if player == R:
-            for box in self.Empty_hex:
+            for box in self.EMPTY_CELLS:
                 nb_neighbors = 0
                 info_rouge = False
                 for i in [0, 1, 2, 3, 4, 5]:
@@ -69,7 +75,7 @@ class GameStateGopher:
                 elif 0 < nb_neighbors < 2 and not info_rouge:
                     legals.append(box)
         elif player == B:
-            for box in self.Empty_hex:
+            for box in self.EMPTY_CELLS:
                 nb_neighbors = 0
                 info_bleu = False
                 for i in [0, 1, 2, 3, 4, 5]:
@@ -93,7 +99,7 @@ class GameStateGopher:
 
     def game_result(self) -> Player:
         assert self.is_game_over()
-        return self.turn
+        return self.opponent
 
     def move(self, action: ActionGopher) -> GameStateGopher:
         new_grid: Grid = self.grid.copy()
