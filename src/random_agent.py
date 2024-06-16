@@ -1,10 +1,10 @@
 from __future__ import annotations
 import random
-from typing import Union
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from hex_tools import *
-from types_constants import *
+from src.utils.hex_tools import *
+from src.utils.types_constants import *
+from src.utils.board_utils import BoardUtils
 
 
 class RandomAgent:
@@ -13,9 +13,6 @@ class RandomAgent:
         state: State,
         player: Player,
         hex_size: int,
-        cells: CellSet,
-        r_neighbors: Neighbors,
-        b_neighbors: Neighbors,
     ):
         # -------------------- Attributs généraux -------------------- #
 
@@ -24,35 +21,20 @@ class RandomAgent:
 
         # -------------------- Structures de données -------------------- #
 
-        self.grid: Grid = self.state_to_grid(state)
+        self.board_utils = BoardUtils(hex_size, state)
+        self.grid: Grid = self.board_utils.state_to_dict(state)
         self.R_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == R
         }
         self.B_CELLS: CellSet = {
             cell for cell, player in self.grid.items() if player == B
         }
-        self.CELLS: CellSet = cells
-        self.R_POV_NEIGHBORS: Neighbors = r_neighbors
-        self.B_POV_NEIGHBORS: Neighbors = b_neighbors
-
-    def state_to_grid(self, state: State) -> Grid:
-        grid: Grid = {}
-        n = self.size - 1
-        for r in range(n, -n - 1, -1):
-            q1 = max(-n, r - n)
-            q2 = min(n, r + n)
-            for q in range(q1, q2 + 1):
-                if (Cell(q, r), R) in state:
-                    grid[Cell(q, r)] = R
-                elif (Cell(q, r), B) in state:
-                    grid[Cell(q, r)] = B
-                else:
-                    grid[Cell(q, r)] = 0
-
-        return grid
+        self.CELLS: CellSet = self.board_utils.cells
+        self.R_POV_NEIGHBORS: Neighbors = self.board_utils.r_pov_neighbors
+        self.B_POV_NEIGHBORS: Neighbors = self.board_utils.b_pov_neighbors
 
     def update_state(self, state: State):
-        self.grid = self.state_to_grid(state)
+        self.grid = self.board_utils.state_to_dict(state)
         self.R_CELLS = {
             cell for cell, player in self.grid.items() if player == R
         }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import time
 from typing import Optional
 import numpy as np
@@ -13,6 +14,8 @@ def argmax(seq):
 
 
 class MonteCarloTreeSearchNode:
+    STATE_CACHE = {}
+
     def __init__(
         self,
         state,
@@ -56,19 +59,37 @@ class MonteCarloTreeSearchNode:
     def is_terminal_node(self) -> bool:
         return self.state.is_game_over()
 
-    def rollout(self) -> tuple[int, int]:
+    def rollout(self) -> tuple[int, int, int]:
         current_rollout_state: GameStateDodo = self.state
         result, game_length = current_rollout_state.simulate_game(self.p)
 
         if result != self.state.turn:  # Reward for the player who has played, not the one who must play
-            return 1, game_length
-        return 0, game_length
+            if self.state.hash in MonteCarloTreeSearchNode.STATE_CACHE:
+                additional_visits = MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0]
+                additional_result = MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][1]
+                MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0] += 1
+                MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][1] += 1
+            else:
+                additional_visits = 0
+                additional_result = 0
+                MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash] = [1, 1]
+            return 1 + additional_result, 1 + additional_visits, game_length
+        if self.state.hash in MonteCarloTreeSearchNode.STATE_CACHE:
+            additional_visits = MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0]
+            additional_result = MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][1]
+            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0] += 1
+            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][1] += 0
+        else:
+            additional_visits = 0
+            additional_result = 0
+            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash] = [1, 0]
+        return 0 + additional_result, 1 + additional_visits, game_length
 
-    def backpropagate(self, result) -> None:
-        self.N += 1
-        self.Q += result
+    def backpropagate(self, reward, visits) -> None:
+        self.N += visits
+        self.Q += reward
         if self.parent is not None:
-            self.parent.backpropagate(1 - result)
+            self.parent.backpropagate(visits - reward, visits)
 
     def is_fully_expanded(self) -> bool:
         return len(self.untried_actions) == 0
@@ -112,9 +133,8 @@ class MonteCarloTreeSearchNode:
 
         while time.time() - start_time < allocated_time:
             v: MonteCarloTreeSearchNode = self._tree_policy()
-            reward, game_length = v.rollout()
-            v.backpropagate(reward)
-
+            reward, visits, game_length = v.rollout()
+            v.backpropagate(reward, visits)
             length_count += game_length
             simulation_count += 1
 
@@ -123,7 +143,6 @@ class MonteCarloTreeSearchNode:
                 time_spent = time.time() - start_time
                 time_left = allocated_time - time_spent
                 if simulation_count * (time_left/time_spent) < first_visited - second_visited:
-                    print(time_left)
                     break
                 if first_visited > 100 and self.best_final_child().Q / first_visited > 0.98:
                     break

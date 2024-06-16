@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import random
 
-from base_state import GameState
-from types_constants import *
-from hex_tools import *
+from gamestate import GameState
+from src.utils.types_constants import *
+from src.utils.hex_tools import *
 
 
 class GameStateGopher(GameState):
@@ -122,6 +122,7 @@ class GameStateGopher(GameState):
         return winner, game_length
 
     def play(self, action, player) -> None:
+        self.is_empty = False
         self.grid[action] = player
         if player == R:
             self.R_CELLS.add(action)

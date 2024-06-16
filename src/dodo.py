@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import random
 
-from base_state import GameState
-from types_constants import *
-from hex_tools import *
+from gamestate import GameState
+from src.utils.types_constants import *
+from src.utils.hex_tools import *
 
 
 class GameStateDodo(GameState):
@@ -47,12 +47,14 @@ class GameStateDodo(GameState):
         new_grid: Grid = self.grid.copy()
         new_grid[action[0]] = 0
         new_grid[action[1]] = self.turn
+
         act_keys = (
             (self.zkeys[action[0]].R, self.zkeys[action[1]].R)
             if self.turn == R
             else (self.zkeys[action[0]].B, self.zkeys[action[1]].B)
         )
         new_hash = self.hash ^ act_keys[0] ^ act_keys[1] ^ self.turn_key
+
         return GameStateDodo(
             new_grid,
             R if self.turn == B else B,
@@ -82,7 +84,7 @@ class GameStateDodo(GameState):
                     )[1]
                 )
             else:
-                move: ActionDodo = random.choice(legals)
+                move = random.choice(legals)
             self.play(move, self.turn)
             game_length += 1
 
@@ -97,7 +99,7 @@ class GameStateDodo(GameState):
                     )[1]
                 )
             else:
-                move: ActionDodo = random.choice(legals)
+                move = random.choice(legals)
             self.play(move, self.opponent)
             game_length += 1
 
