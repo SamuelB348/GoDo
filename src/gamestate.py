@@ -4,8 +4,8 @@ from functools import cached_property
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from src.utils.types_constants import *
-from src.utils.hex_tools import *
+from src.utilities.types_constants import *
+from src.utilities.hex_tools import hex_to_pixel, polygon_corners
 
 
 class GameState:
@@ -44,30 +44,30 @@ class GameState:
         # -------------------- Other -------------------- #
 
         self.is_empty = self.empty_grid()
-        self.legals: list[Action] = self.generate_legal_actions(self.turn)
+        self.legals: Union[list[ActionDodo], list[ActionGopher]] = self.generate_legal_actions(self.turn)
 
-    def empty_grid(self) -> bool:
+    def empty_grid(self):
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def generate_legal_actions(self, player: Player) -> list[Action]:
+    def generate_legal_actions(self, player: Player) -> Union[list[ActionDodo], list[ActionGopher]]:
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def get_legal_actions(self) -> list[Action]:
+    def get_legal_actions(self) -> Union[list[ActionDodo], list[ActionGopher]]:
         return self.legals
 
     def is_game_over(self) -> bool:
         return len(self.legals) == 0
 
-    def game_result(self) -> Player:
+    def game_result(self):
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def move(self, action: Action) -> GameState:
+    def move(self, action):
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def simulate_game(self, p) -> tuple[Player, int]:
+    def simulate_game(self, p):
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def play(self, action, player) -> None:
+    def play(self, action, player):
         raise NotImplementedError("Must be implemented in subclasses")
 
     def undo(self, action, player):
@@ -116,11 +116,11 @@ class GameState:
         player: Player,
         a: float,
         b: float,
-        legals: list[Action],
-    ) -> tuple[float, list[Action]]:
+        legals
+    ):
         if player == self.turn:
             best_value = float("-inf")
-            best_legals: list[Action] = []
+            best_legals = []
             if len(legals) == 1:
                 return best_value, legals
 
@@ -196,7 +196,7 @@ class GameState:
             plt.text(
                 center.x,
                 center.y,
-                f"{box.q}, {box.r}",
+                f"{box[0]}, {box[0]}",
                 horizontalalignment="right",
             )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)

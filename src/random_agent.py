@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from src.utils.hex_tools import *
-from src.utils.types_constants import *
-from src.utils.board_utils import BoardUtils
+
+from src.utilities.hex_tools import *
+from src.utilities.types_constants import *
+from src.utilities.board_utils import BoardUtils
 
 
 class RandomAgent:

@@ -1,4 +1,13 @@
-from agents import *
+import multiprocessing
+import cProfile
+import pstats
+import time
+import ast
+import numpy as np
+
+from src.utilities.types_constants import *
+from src.utilities.utils import *
+from agents import EngineDodo, EngineGopher
 
 
 Environment = Union[EngineDodo, EngineGopher]
@@ -12,11 +21,11 @@ def start_board_dodo(size: int) -> State:
         q2 = min(n, r + n)
         for q in range(q1, q2 + 1):
             if -q > r + (size - 3):
-                grid.append((Cell(q, r), R))
+                grid.append(((q, r), R))
             elif r > -q + (size - 3):
-                grid.append((Cell(q, r), B))
+                grid.append(((q, r), B))
             else:
-                grid.append((Cell(q, r), 0))
+                grid.append(((q, r), 0))
     return grid
 
 
@@ -27,7 +36,7 @@ def start_board_gopher(size: int) -> State:
         q1 = max(-n, r - n)
         q2 = min(n, r + n)
         for q in range(q1, q2 + 1):
-            grid.append((Cell(q, r), 0))
+            grid.append(((q, r), 0))
     return grid
 
 
@@ -61,7 +70,7 @@ def final_result(state: State, score: Score, player: Player):
     pass
 
 
-def new_state_dodo(state: State, action: Action, player: Player):
+def new_state_dodo(state: State, action: ActionDodo, player: Player):
     state.remove((action[0], player))
     state.append((action[0], 0))
     state.append((action[1], player))

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import copy
 import time
+import random
 from typing import Optional
 import numpy as np
 
-from dodo import *
-from gopher import *
+from gamestate import GameState
+from src.utilities.types_constants import *
 
 
 def argmax(seq):
@@ -60,7 +60,7 @@ class MonteCarloTreeSearchNode:
         return self.state.is_game_over()
 
     def rollout(self) -> tuple[int, int, int]:
-        current_rollout_state: GameStateDodo = self.state
+        current_rollout_state: GameState = self.state
         result, game_length = current_rollout_state.simulate_game(self.p)
 
         if result != self.state.turn:  # Reward for the player who has played, not the one who must play

@@ -1,6 +1,6 @@
 import random
-from types_constants import State, CellSet, Neighbors, ZKey, R, B
-from hex_tools import neighbor
+from src.utilities.types_constants import State, CellSet, Neighbors, ZKey, R, B
+from src.utilities.hex_tools import neighbor
 
 
 class BoardUtils:

@@ -3,7 +3,7 @@ from __future__ import print_function
 from collections import namedtuple
 import math
 
-from types_constants import Cell
+from src.utilities.types_constants import Cell
 
 Point = namedtuple("Point", ["x", "y"])
 

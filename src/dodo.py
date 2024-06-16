@@ -3,8 +3,8 @@ from __future__ import annotations
 import random
 
 from gamestate import GameState
-from src.utils.types_constants import *
-from src.utils.hex_tools import *
+from src.utilities.types_constants import *
+from src.utilities.hex_tools import Layout, layout_flat, Point
 
 
 class GameStateDodo(GameState):
