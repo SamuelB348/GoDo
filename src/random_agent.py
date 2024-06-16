@@ -4,9 +4,9 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from src.utilities.hex_tools import *
-from src.utilities.types_constants import *
-from src.utilities.board_utils import BoardUtils
+from hex_tools import *
+from types_constants import *
+from board_utils import BoardUtils
 
 
 class RandomAgent:

@@ -1,8 +1,8 @@
 from typing import Optional
 
 from mcts import MonteCarloTreeSearchNode
-from src.utilities.types_constants import *
-from src.utilities.board_utils import BoardUtils
+from types_constants import *
+from board_utils import BoardUtils
 from dodo import GameStateDodo
 from gopher import GameStateGopher
 
@@ -80,7 +80,7 @@ class Engine:
             self.previous_mean_game_length = mean_game_length
             print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
 
-        return best_children.parent_action[0], best_children.parent_action[1]
+        return best_children.parent_action
         # return best_children.parent_action
 
 
@@ -168,3 +168,5 @@ class EngineGopher(Engine):
                 break
         return has_played
 
+
+Environment = Union[EngineDodo, EngineGopher]

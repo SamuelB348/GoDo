@@ -3,8 +3,8 @@ from __future__ import annotations
 import random
 
 from gamestate import GameState
-from src.utilities.types_constants import *
-from src.utilities.hex_tools import *
+from types_constants import *
+from hex_tools import *
 
 
 class GameStateGopher(GameState):
@@ -33,7 +33,7 @@ class GameStateGopher(GameState):
         opponent_cells, opponent = (self.R_CELLS, R) if player == B else (self.B_CELLS, B)
 
         if player == R and self.is_empty:
-            return list(self.EMPTY_CELLS)
+            return [(0, self.size-1)]
 
         for box in opponent_cells:
             for nghb in self.NEIGHBORS[box]:
@@ -57,12 +57,14 @@ class GameStateGopher(GameState):
     def move(self, action: ActionGopher) -> GameStateGopher:
         new_grid: Grid = self.grid.copy()
         new_grid[action] = self.turn
-        act_keys = (
+
+        act_key = (
             self.zkeys[action].R
             if self.turn == R
             else self.zkeys[action].B
         )
-        new_hash = self.hash ^ act_keys ^ self.turn_key
+        new_hash = self.hash ^ act_key ^ self.turn_key
+
         return GameStateGopher(
             new_grid,
             R if self.turn == B else B,

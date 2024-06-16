@@ -5,7 +5,7 @@ import argparse
 from typing import Dict, Any
 from gndclient import start, Action, Score, Player, State, Time, DODO_STR, GOPHER_STR
 
-from src.agents import *
+from agents import *
 
 
 def initialize(
@@ -26,6 +26,7 @@ def strategy_brain(
 
 
 def final_result(state: State, score: Score, player: Player):
+    MonteCarloTreeSearchNode.STATE_CACHE = {}
     print(f"Ending: {player} wins with a score of {score}")
 
 

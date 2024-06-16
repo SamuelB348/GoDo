@@ -2,11 +2,10 @@ import multiprocessing
 import cProfile
 import pstats
 import time
-import ast
 import numpy as np
 
-from src.utilities.types_constants import *
-from src.utilities.utils import *
+from types_constants import *
+from utils import *
 from agents import EngineDodo, EngineGopher
 
 
@@ -71,6 +70,8 @@ def final_result(state: State, score: Score, player: Player):
 
 
 def new_state_dodo(state: State, action: ActionDodo, player: Player):
+    if (action[0], player) not in state:
+        print(action[0], player)
     state.remove((action[0], player))
     state.append((action[0], 0))
     state.append((action[1], player))
@@ -84,11 +85,11 @@ def new_state_gopher(state: State, action: Action, player: Player):
 def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
-    e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
+    e2 = None
     time_r: float = 120.0
     time_b: float = 120.0
     i = 0
-    e1.MCTSearcher.state.pplot()
+    # e1.MCTSearcher.state.pplot()
     # r = RandomAgent(state_tmp, B, size)
     while True:
         start_time = time.time()
@@ -99,26 +100,27 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             return 1
         time_r -= time.time() - start_time
         new_state_dodo(state_tmp, s, R)
-        e1.MCTSearcher.state.pplot()
+        # e1.MCTSearcher.state.pplot()
+        if e2 is None:
+            e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
         start_time = time.time()
-
         # r.update_state(state_tmp)
         # if r.is_final():
         #     print(2, end="")
         #     return -1
         # s = r.get_action()
 
-        src = input("Tuple source :")
-        src = ast.literal_eval(src)
-        dest = input("Tuple dest :")
-        dest = ast.literal_eval(dest)
-        s = (src, dest)
+        # src = input("Tuple source :")
+        # src = ast.literal_eval(src)
+        # dest = input("Tuple dest :")
+        # dest = ast.literal_eval(dest)
+        # s = (src, dest)
 
-        # s = strategy(e2, state_tmp, e2.player, time_b)[1]
-        # if s is None:
-        #     e2.MCTSearcher.state.pplot()
-        #     print(2, end="")
-        #     return -1
+        s = strategy(e2, state_tmp, e2.player, time_b)[1]
+        if s is None:
+            e2.MCTSearcher.state.pplot()
+            print(2, end="")
+            return -1
         time_b -= time.time() - start_time
         new_state_dodo(state_tmp, s, B)
 
@@ -126,7 +128,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
 def gopher(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_gopher(size)
     e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
-    e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
+    e2 = None
     time_r: float = 120.0
     time_b: float = 120.0
 
@@ -141,6 +143,9 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
         print(time_r)
         new_state_gopher(state_tmp, s, R)
         e1.MCTSearcher.state.pplot()
+
+        if e2 is None:
+            e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
 
         start_time = time.time()
         s = strategy(e2, state_tmp, e2.player, time_b)[1]
@@ -223,9 +228,10 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 
 def main():
-    dodo(4, 1, False, 2, 1, False, 2)
+    # match(100, 4, 1, False, 2, 2, False, 2)
+    # dodo(4, 1, False, 2, 1, False, 2)
     # match(20, 4, 1, False, 2, 1, False, 2)
-    # gopher(6, 1, False, 2, 1, False, 2)
+    gopher(6, 1, False, 2, 1, False, 2)
 
 
 if __name__ == "__main__":

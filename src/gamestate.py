@@ -4,8 +4,8 @@ from functools import cached_property
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from src.utilities.types_constants import *
-from src.utilities.hex_tools import hex_to_pixel, polygon_corners
+from types_constants import *
+from hex_tools import hex_to_pixel, polygon_corners
 
 
 class GameState:
@@ -193,12 +193,12 @@ class GameState:
             )
 
             plt.gca().add_patch(polygon)
-            plt.text(
-                center.x,
-                center.y,
-                f"{box[0]}, {box[0]}",
-                horizontalalignment="right",
-            )
+            # plt.text(
+            #     center.x,
+            #     center.y,
+            #     f"{box[0]}, {box[1]}",
+            #     horizontalalignment="right",
+            # )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()

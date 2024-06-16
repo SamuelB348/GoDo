@@ -6,7 +6,7 @@ from typing import Optional
 import numpy as np
 
 from gamestate import GameState
-from src.utilities.types_constants import *
+from types_constants import *
 
 
 def argmax(seq):
@@ -14,7 +14,7 @@ def argmax(seq):
 
 
 class MonteCarloTreeSearchNode:
-    STATE_CACHE = {}
+    STATE_CACHE: dict[int, list[int]] = {}
 
     def __init__(
         self,
