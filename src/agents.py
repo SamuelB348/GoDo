@@ -132,7 +132,6 @@ class Engine:
         time_allocated: float = 2 * (time_left / self.previous_mean_game_length)
 
         if self.root_parallelization:
-            print("h")
             with ProcessPoolExecutor() as executor:
                 futures = [
                     executor.submit(self.run_mcts, i, mctsearcher, time_allocated)
@@ -159,7 +158,7 @@ class Engine:
         print(root_visits)
         print(best_root)
 
-        mean_game_length = np.mean(mean_game_lengths)
+        mean_game_length = sum(mean_game_lengths)/len(mean_game_lengths)
 
         self.update_state(best_root)
 
