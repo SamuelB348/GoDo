@@ -1,3 +1,7 @@
+"""
+This section defines type aliases in order to give a more readable typing.
+"""
+
 from typing import Union
 from collections import namedtuple
 
@@ -8,6 +12,7 @@ Cell = tuple[int, int]
 ActionGopher = Cell
 ActionDodo = tuple[Cell, Cell]
 Action = Union[ActionGopher, ActionDodo]
+ListActions = Union[list[ActionDodo], list[ActionGopher]]
 Player = int
 State = list[tuple[Cell, Player]]
 Score = int

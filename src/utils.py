@@ -1,4 +1,18 @@
+"""
+This section defines some utilities that may or may not be used inside the other sections.
+"""
+
+
 def print_percentage_bar(percentage1, percentage2, sample_size):
+    """
+    Display a percentage bar (percentage1*"="|percentage2*"="). %1 + %2 should equal 1.
+
+    :param percentage1: a percentage (max 1)
+    :param percentage2: a percentage (max 1)
+    :param sample_size: a sample size these percentages are taken from
+    :return:
+    """
+
     total_length = 100
 
     green_length = int(total_length * percentage1)
@@ -20,6 +34,13 @@ def print_percentage_bar(percentage1, percentage2, sample_size):
 
 
 def sum_lists(list_of_lists):
+    """
+    Perform the sum of lists with variable lengths.
+
+    :param list_of_lists: a list of lists of integers or floats
+    :return: a list
+    """
+
     max_length = max(
         len(lst) for lst in list_of_lists
     )  # Trouve la longueur maximale parmi toutes les listes

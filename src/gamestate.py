@@ -1,3 +1,10 @@
+"""
+This section implements a generic game state, that can be adapted for dodo or gopher.
+It contains the core logic of the game in itself (not the AI).
+
+It defines several methods that will later be called by the MCTS section.
+"""
+
 from __future__ import annotations
 
 from functools import cached_property
@@ -5,88 +12,179 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
 from types_constants import *
-from hex_tools import hex_to_pixel, polygon_corners
+from hex_tools import hex_to_pixel, polygon_corners, Layout
 
 
 class GameState:
+    """
+    GameState class encapsulating all the logic and methods essential to play moves,
+    generate legal actions, simulate a whole game from the current position, etc...
+    """
+
     def __init__(
         self,
         grid: Grid,
         player: Player,
         hex_size: int,
-        zkeys,
-        turn_key,
-        state_hash,
+        zkeys: dict[Cell, ZKey],
+        turn_key: int,
+        state_hash: int,
     ):
-        # -------------------- Basic attributes -------------------- #
 
+        # The player whose turn it is in the current situation
         self.turn: Player = player
+        # The opponent of the player
         self.opponent: Player = R if player == B else B
+        # The size of the board
         self.size: int = hex_size
 
-        # -------------------- Board representation -------------------- #
-
+        # The grid representing the checkers position on the board
         self.grid: Grid = grid
-        self.R_CELLS: CellSet = {
+        # The cells of the red player
+        self.r_cells: CellSet = {
             cell for cell, player in self.grid.items() if player == R
         }
-        self.B_CELLS: CellSet = {
+        # The cells of the blue player
+        self.b_cells: CellSet = {
             cell for cell, player in self.grid.items() if player == B
         }
-        self.EMPTY_CELLS: CellSet = {
+        # The empty cells, not occupied by any player
+        self.empty_cells: CellSet = {
             cell for cell, player in self.grid.items() if player == 0
         }
 
-        self.zkeys = zkeys
-        self.turn_key = turn_key
-        self.hash = state_hash
+        # The zobrist keys of the cells
+        self.zkeys: dict[Cell, ZKey] = zkeys
+        # The key for the turn
+        self.turn_key: int = turn_key
+        # The hash of the current position
+        self.hash: int = state_hash
 
-        # -------------------- Other -------------------- #
+        # Boolean to indicate if the board is empty
+        self.is_empty: bool = self.empty_grid()
+        # The possible legals for the player in this position
+        self.legals: ListActions = self.generate_legal_actions(self.turn)
 
-        self.is_empty = self.empty_grid()
-        self.legals: Union[list[ActionDodo], list[ActionGopher]] = self.generate_legal_actions(self.turn)
+    def empty_grid(self) -> bool:
+        """
+        Tell if the grid is empty or not.
+        Should be implemented in the subclasses.
+        :return:
+        """
 
-    def empty_grid(self):
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def generate_legal_actions(self, player: Player) -> Union[list[ActionDodo], list[ActionGopher]]:
+    def generate_legal_actions(self, player) -> ListActions:
+        """
+        Generate all the lagl actions of the given player.
+        Should be implemented in the subclasses.
+
+        :param player:
+        :return:
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def get_legal_actions(self) -> Union[list[ActionDodo], list[ActionGopher]]:
+    def get_legal_actions(self) -> ListActions:
+        """
+        Return the legal actions on the current position.
+
+        :return: l'attribut legals
+        """
+
         return self.legals
 
     def is_game_over(self) -> bool:
+        """
+        Return True if the game is over.
+        It doesn't tell which player has won, it differs in the 2 games.
+
+        :return: a boolean
+        """
+
         return len(self.legals) == 0
 
-    def game_result(self):
+    def move(self, action) -> GameState:
+        """
+        Perform a move, and return a new GameState instance.
+        Should be implemented in the subclasses.
+
+        :param action: a legal action
+        :return: a new GameState instance
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def move(self, action):
+    def simulate_game(self, improved_playout) -> tuple[Player, int]:
+        """
+        Simulate a game from the current state.
+        Should be implemented in the subclasses.
+
+        :param improved_playout: a boolean indicating if we should perform minmax playout or not
+        :return: a tuple (winner, game_length)
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def simulate_game(self, p):
+    def play(self, action, player) -> None:
+        """
+        Play a move while staying inside the structure.
+        Modify the structure accordingly, but the modifications are not ment to be permanent.
+        Should be implemented in the subclasses.
+
+        :param action: a legal action
+        :param player: the player whose turn it is to play
+        :return: None
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def play(self, action, player):
+    def undo(self, action, player) -> None:
+        """
+        Opposite of the play method.
+        Should be implemented in the subclasses.
+
+        :param action: a legal action to undo
+        :param player: the player whose turn it is
+        :return: None
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def undo(self, action, player):
-        raise NotImplementedError("Must be implemented in subclasses")
+    def evaluate(self, legals, player) -> float:
+        """
+        Compute a heuristic evaluation of the current position.
+        Should be implemented in the subclasses.
 
-    def evaluate(self, legals, player):
+        :param legals: the precomputed legals for one of the 2 players
+        :param player: the player whose point of view is used to evaluate the game
+        :return: a float representing the evaluation of the current position
+        """
+
         raise NotImplementedError("Must be implemented in subclasses")
 
     def alphabeta(self, depth: int, player: Player, a: float, b: float) -> float:
-        legals = self.generate_legal_actions(player)
+        """
+        Perform alphabeta search.
+
+        :param depth: the depth of alphabeta search
+        :param player: a player whose turn it is in the alphabeta search
+        :param a: alpha parameter
+        :param b: beta parameter
+        :return: the alphabeta value
+        """
+        legals: ListActions = self.generate_legal_actions(player)
+
         if len(legals) == 0:
             return 10000 if player == self.turn else -10000
+
         if depth == 0:
-            eval = self.evaluate(legals, player)
-            # print(eval)
-            return eval
+            heuristic: float = self.evaluate(legals, player)
+            return heuristic
 
         if player == self.turn:
-            best_value = float("-inf")
+            best_value: float = float("-inf")
+
             for legal in legals:
                 self.play(legal, player)
                 best_value = max(
@@ -100,6 +198,7 @@ class GameState:
             return best_value
         else:
             best_value = float("inf")
+
             for legal in legals:
                 self.play(legal, player)
                 best_value = min(best_value, self.alphabeta(depth - 1, self.turn, a, b))
@@ -111,16 +210,24 @@ class GameState:
             return best_value
 
     def alphabeta_actions_v1(
-        self,
-        depth: int,
-        player: Player,
-        a: float,
-        b: float,
-        legals
+        self, depth: int, player: Player, a: float, b: float, legals: ListActions
     ):
+        """
+        Same as alphabeta but with action selection.
+        Must be called once when we start an alphabeta search.
+
+        :param depth: the depth of alphabeta search
+        :param player: a player whose turn it is in the alphabeta search
+        :param a: alpha parameter
+        :param b: beta parameter
+        :param legals: the precomputed legals of the player
+        :return: the best alphabeta values and the actions leading to them
+        """
+
         if player == self.turn:
-            best_value = float("-inf")
+            best_value: float = float("-inf")
             best_legals = []
+
             if len(legals) == 1:
                 return best_value, legals
 
@@ -134,10 +241,12 @@ class GameState:
                 elif v == best_value:
                     best_legals.append(legal)
                 a = max(a, best_value)
+
             return best_value, best_legals
         else:  # minimizing player
             best_value = float("inf")
             best_legals = []
+
             if len(legals) == 1:
                 return best_value, legals
 
@@ -156,6 +265,11 @@ class GameState:
 
     @cached_property
     def get_layout(self):
+        """
+        Return the appropriate layout to display the board.
+
+        :return: a layout
+        """
         raise NotImplementedError("Must be implemented in subclasses")
 
     def pplot(self) -> None:
@@ -165,7 +279,7 @@ class GameState:
 
         plt.figure(figsize=(10, 10))
 
-        layout = self.get_layout()
+        layout: Layout = self.get_layout
 
         for box, player in self.grid.items():
             corners = polygon_corners(layout, box)
