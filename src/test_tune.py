@@ -88,7 +88,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
-    time_r: float = 120.0
+    time_r: float = 300.0
     time_b: float = 120.0
     i = 0
     # e1.MCTSearcher.state.pplot()
@@ -102,7 +102,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
             return 1
         time_r -= time.time() - start_time
         new_state_dodo(state_tmp, s, R)
-        # e1.MCTSearcher.state.pplot()
+        e1.MCTSearchers[0].state.pplot()
         if e2 is None:
             e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
         start_time = time.time()
@@ -231,8 +231,8 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 def main():
     # match(100, 4, 1, False, 2, 2, False, 2)
-    dodo(4, 1, False, False, 1, False, False)
-    # match(20, 4, 1, False, 2, 1, False, 2)
+    dodo(4, 1, False, True, 1, False, False)
+    # match(20, 4, 1, False, False, 1, False, False)
     # gopher(6, 1, False, 0, 1, False, 0)
 
 
