@@ -193,12 +193,12 @@ class GameState:
             )
 
             plt.gca().add_patch(polygon)
-            # plt.text(
-            #     center.x,
-            #     center.y,
-            #     f"{box[0]}, {box[1]}",
-            #     horizontalalignment="right",
-            # )
+            plt.text(
+                center.x,
+                center.y,
+                f"{box[0]}, {box[1]}",
+                horizontalalignment="right",
+            )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()

@@ -148,3 +148,42 @@ class GameStateGopher(GameState):
 
     def get_layout(self):
         return Layout(layout_pointy, Point(1, -1), Point(0, 0))
+
+
+if __name__ == "__main__":
+    from board_utils import BoardUtils
+    from test_tune import start_board_gopher
+    s = start_board_gopher(6)
+    b = BoardUtils(6, s)
+
+    e = GameStateGopher(b.state_to_dict(s), R, 6, b.neighbors, b.cell_keys, b.turn_key, b.compute_start_hash(s))
+    e.play((0, 5), R)
+    e.play((-1, 4), B)
+    e.play((-2, 3), R)
+    e.play((1, 5), B)
+    e.play((1, 4), R)
+    e.play((0, 3), B)
+    e.play((-1, 2), R)
+    e.play((-1, 1), B)
+    e.play((-2, 0), R)
+    e.play((-2, -1), B)
+    e.play((0, 1), R)
+    e.play((0, 0), B)
+    e.play((1, 0), R)
+    e.play((1, 2), B)
+    e.play((2, 3), R)
+    e.play((1, -1), B)
+    e.play((-3, -2), R)
+    e.play((2, 1), B)
+    e.play((1, -2), R)
+    e.play((3, 3), B)
+    e.play((4, 3), R)
+    e.play((4, 2), B)
+    e.play((5, 2), R)
+    e.play((0, -3), B)
+    e.play((-1, -4), R)
+    e.play((-3, -3), B)
+    e.play((-4, -4), R)
+    e.play((-5, -5), B)
+    e.pplot()
+    print(e.alphabeta_actions_v1(10, R, float('-inf'), float('inf'), e.generate_legal_actions(R)))
