@@ -37,20 +37,16 @@ class RandomAgent:
 
     def update_state(self, state: State):
         self.grid = self.board_utils.state_to_dict(state)
-        self.R_CELLS = {
-            cell for cell, player in self.grid.items() if player == R
-        }
-        self.B_CELLS = {
-            cell for cell, player in self.grid.items() if player == B
-        }
+        self.R_CELLS = {cell for cell, player in self.grid.items() if player == R}
+        self.B_CELLS = {cell for cell, player in self.grid.items() if player == B}
 
     def get_legal_actions(self) -> list[ActionDodo]:
         legals: list[ActionDodo] = []
         for cell in self.R_CELLS if self.player == R else self.B_CELLS:
             for nghb in (
-                    self.R_POV_NEIGHBORS[cell]
-                    if self.player == R
-                    else self.B_POV_NEIGHBORS[cell]
+                self.R_POV_NEIGHBORS[cell]
+                if self.player == R
+                else self.B_POV_NEIGHBORS[cell]
             ):
                 if self.grid[nghb] == 0:
                     legals.append((cell, nghb))

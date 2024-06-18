@@ -34,7 +34,7 @@ class BoardUtils:
     @staticmethod
     def generate_cells(hex_size: int) -> CellSet:
         """
-        Generate all the cells of the board of a given size.
+        Generates all the cells of the board of a given size.
 
         :param hex_size: the size of the board (the length of the board sides, in cells)
         :return: a set of all the cells of the board, as coordinates (ex: {(0,0), (-1,3), ...})
@@ -53,7 +53,7 @@ class BoardUtils:
 
     def generate_neighbors(self, directions: list[int]) -> Neighbors:
         """
-        Generate all the neighbors towards the given directions, for all the cells on the board.
+        Generates all the neighbors towards the given directions, for all the cells on the board.
 
         :param directions: a list of directions for which we want to compute the neighbors
         :return: a dictionary {cell: list of all the neighbors towards the different directions}
@@ -68,7 +68,7 @@ class BoardUtils:
 
     def generate_zobrist_keys(self) -> tuple[dict[Cell, ZKey], int]:
         """
-        Generate all the different zobrist keys for all the cells, for all the players,
+        Generates all the different zobrist keys for all the cells, for all the players,
         as well as the key representing whose turn it is.
 
         :return: a tuple composed of a dictionary {cell: zobrist keys}, and a unique turn key
@@ -117,7 +117,7 @@ class BoardUtils:
 
     def state_to_dict(self, state: State):
         """
-        Convert a state in the form of a list[(cell, player)] into a dictionary dict[cell: player].
+        Converts a state in the form of a list[(cell, player)] into a dictionary dict[cell: player].
 
         :param state: the state we want to convert
         :return: a dictionary equivalent to the original state

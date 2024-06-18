@@ -26,7 +26,7 @@ class GameStateDodo(GameState):
         b_neighbors: Neighbors,
         zkeys: dict[Cell, ZKey],
         turn_key: int,
-        state_hash: int
+        state_hash: int,
     ):
 
         # For Dodo, we need the two different pov for the neighbors: the red's and the blue's
@@ -36,7 +36,7 @@ class GameStateDodo(GameState):
 
     def empty_grid(self) -> bool:
         """
-        Extend the empty_grid method of GameState.
+        Extends the empty_grid method of GameState.
         Always return False for dodo.
 
         :return: a boolean
@@ -46,8 +46,8 @@ class GameStateDodo(GameState):
 
     def generate_legal_actions(self, player: Player) -> list[ActionDodo]:
         """
-        Extend the generate_legal_actions method of GameState.
-        Generate all the legal actions of the player.
+        Extends the generate_legal_actions method of GameState.
+        Generates all the legal actions of the player.
 
         :param player: the player whose legal moves we will calculate
         :return: a list of legal moves
@@ -72,7 +72,7 @@ class GameStateDodo(GameState):
     def move(self, action: ActionDodo) -> GameStateDodo:
         """
         Extends the move method of GameState.
-        Modify the game state, compute the resulting hash and return a new GameStateDodo.
+        Modifies the game state, compute the resulting hash and return a new GameStateDodo.
 
         :param action: a legal action
         :return: a new GameStateDodo instance
@@ -105,7 +105,7 @@ class GameStateDodo(GameState):
     def simulate_game(self, improved_playout: bool) -> tuple[Player, int]:
         """
         Extends the simulate_game method of GameState.
-        Simulate a game from the current game state. Here we stay inside the current structure,
+        Simulates a game from the current game state. Here we stay inside the current structure,
         therefore we will need to save the state before simulating and to restore it after.
 
         :param improved_playout: boolean indicating if it should perform minmax playouts or not.
@@ -164,7 +164,7 @@ class GameStateDodo(GameState):
     def play(self, action: ActionDodo, player: Player) -> None:
         """
         Extends the play method of GameState.
-        Play an action and modify the structure accordingly. Unlike the move method, here we stay
+        Plays an action and modify the structure accordingly. Unlike the move method, here we stay
         inside the current structure. The modifications are not ment to be permanent.
 
         :param action: a legal action
@@ -186,7 +186,7 @@ class GameStateDodo(GameState):
     def undo(self, action: ActionDodo, player: Player) -> None:
         """
         Extends the undo method of GameState.
-        Undo an action and modify the structure accordingly. Unlike the move method, here we stay
+        Undoes an action and modify the structure accordingly. Unlike the move method, here we stay
         inside the current game state structure. It is intended to be used when using alphabeta.
 
         :param action: a legal action to be undone
@@ -210,7 +210,7 @@ class GameStateDodo(GameState):
     def evaluate(self, legals: list[ActionDodo], player: Player) -> float:
         """
         Extends the evaluate method of GameState.
-        Perform a very simple heuristic evaluation function for alphabeta:
+        Performs a very simple heuristic evaluation function for alphabeta:
         - The more the player has legal actions, the worst.
         - The more the opponent of the player has legal actions, the best.
 

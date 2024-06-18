@@ -65,18 +65,18 @@ class GameState:
         # The possible legals for the player in this position
         self.legals: ListActions = self.generate_legal_actions(self.turn)
 
-    def empty_grid(self) -> bool:
+    def empty_grid(self):
         """
-        Tell if the grid is empty or not.
+        Tells if the grid is empty or not.
         Should be implemented in the subclasses.
         :return:
         """
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def generate_legal_actions(self, player) -> ListActions:
+    def generate_legal_actions(self, player):
         """
-        Generate all the lagl actions of the given player.
+        Generates all the legal actions of the given player.
         Should be implemented in the subclasses.
 
         :param player:
@@ -85,9 +85,9 @@ class GameState:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def get_legal_actions(self) -> ListActions:
+    def get_legal_actions(self):
         """
-        Return the legal actions on the current position.
+        Returns the legal actions on the current position.
 
         :return: l'attribut legals
         """
@@ -96,7 +96,7 @@ class GameState:
 
     def is_game_over(self) -> bool:
         """
-        Return True if the game is over.
+        Returns True if the game is over.
         It doesn't tell which player has won, it differs in the 2 games.
 
         :return: a boolean
@@ -104,9 +104,9 @@ class GameState:
 
         return len(self.legals) == 0
 
-    def move(self, action) -> GameState:
+    def move(self, action):
         """
-        Perform a move, and return a new GameState instance.
+        Performs a move, and return a new GameState instance.
         Should be implemented in the subclasses.
 
         :param action: a legal action
@@ -115,9 +115,9 @@ class GameState:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def simulate_game(self, improved_playout) -> tuple[Player, int]:
+    def simulate_game(self, improved_playout):
         """
-        Simulate a game from the current state.
+        Simulates a game from the current state.
         Should be implemented in the subclasses.
 
         :param improved_playout: a boolean indicating if we should perform minmax playout or not
@@ -126,10 +126,10 @@ class GameState:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def play(self, action, player) -> None:
+    def play(self, action, player):
         """
-        Play a move while staying inside the structure.
-        Modify the structure accordingly, but the modifications are not ment to be permanent.
+        Plays a move while staying inside the structure.
+        Modifies the structure accordingly, but the modifications are not ment to be permanent.
         Should be implemented in the subclasses.
 
         :param action: a legal action
@@ -139,7 +139,7 @@ class GameState:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def undo(self, action, player) -> None:
+    def undo(self, action, player):
         """
         Opposite of the play method.
         Should be implemented in the subclasses.
@@ -151,9 +151,9 @@ class GameState:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def evaluate(self, legals, player) -> float:
+    def evaluate(self, legals, player):
         """
-        Compute a heuristic evaluation of the current position.
+        Computes a heuristic evaluation of the current position.
         Should be implemented in the subclasses.
 
         :param legals: the precomputed legals for one of the 2 players
@@ -165,7 +165,7 @@ class GameState:
 
     def alphabeta(self, depth: int, player: Player, a: float, b: float) -> float:
         """
-        Perform alphabeta search.
+        Performs alphabeta search.
 
         :param depth: the depth of alphabeta search
         :param player: a player whose turn it is in the alphabeta search
@@ -266,7 +266,7 @@ class GameState:
     @cached_property
     def get_layout(self):
         """
-        Return the appropriate layout to display the board.
+        Returns the appropriate layout to display the board.
 
         :return: a layout
         """
@@ -274,7 +274,7 @@ class GameState:
 
     def pplot(self) -> None:
         """
-        Produit un affichage graphique de la grille de jeu actuelle.
+        Displays the grid in a nice format
         """
 
         plt.figure(figsize=(10, 10))

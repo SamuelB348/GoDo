@@ -6,7 +6,6 @@ carry out a full game.
 from typing import Optional
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-import numpy as np
 
 from mcts import MonteCarloTreeSearchNode
 from types_constants import *
@@ -61,12 +60,33 @@ class Engine:
         # It is set to total_time (to get exactly 2 seconds for the first move)
         self.previous_mean_game_length: float = float(total_time)
 
-    def generate_mctsearchers(
+    def generate_mctsearcher(
         self, state, hex_size, player, c_param, improved_playout
+    ) -> MonteCarloTreeSearchNode:
+        """
+        Generates a single instance of MonteCarloTreeSearchNode.
+        Should be implemented in the subclasses.
+
+        :param state: a state
+        :param hex_size: the size of the board
+        :param player: a player
+        :param c_param: the c exploration parameter
+        :param improved_playout: a boolean indicating if we perform minmax playout or not
+        :return: an instance of MonteCarloTreeSearchNode
+        """
+
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    def generate_mctsearchers(
+        self,
+        state: State,
+        hex_size: int,
+        player: Player,
+        c_param: float,
+        improved_playout: bool,
     ) -> list[MonteCarloTreeSearchNode]:
         """
-        Generate a single instance of MonteCarloTreeSearchNode.
-        Should be implemented in the subclasses.
+        Generates a list of MonteCarloTreeSearchNodes.
 
         :param state: a state
         :param hex_size: the size of the board
@@ -76,11 +96,24 @@ class Engine:
         :return: a list of MCTSearchers
         """
 
-        raise NotImplementedError("Must be implemented in subclasses")
+        if self.root_parallelization:
+            return [
+                self.generate_mctsearcher(
+                    state, hex_size, player, c_param, improved_playout
+                )
+                for _ in range(
+                    4
+                )  # Put here the number of cores you want to dedicate to the search
+            ]
+        return [
+            self.generate_mctsearcher(
+                state, hex_size, player, c_param, improved_playout
+            )
+        ]
 
-    def has_played(self, state: State) -> Action:
+    def has_played(self, state) -> Action:
         """
-        Return the action the opponent has played based on the new state we receive.
+        Returns the action the opponent has played based on the new state we receive.
         Should be implemented in the subclasses.
 
         :param state: a game state
@@ -89,15 +122,18 @@ class Engine:
 
         raise NotImplementedError("Must be implemented in subclasses")
 
-    def update_state(self, has_played: Action) -> None:
+    def update(self, has_played: Action) -> None:
         """
-        Update all the MCTSearchers based on the action the opponent played.
+        Updates all the MCTSearchers based on the action the opponent played.
 
         :param has_played: the action played by the opponent
         :return: None
         """
 
         for i, mctsearcher in enumerate(self.MCTSearchers):
+            # We update each MCTSearcher based on an action that was played
+            # (played by the player or the opponent)
+            # If the action was not explored before we create a new root node
             if has_played in mctsearcher.untried_actions:
                 next_state: GameState = mctsearcher.state.move(has_played)
                 self.MCTSearchers[i] = MonteCarloTreeSearchNode(
@@ -108,7 +144,7 @@ class Engine:
                     parent=mctsearcher,
                     parent_action=has_played,
                 )
-            else:
+            else:  # If the action was one of the child, the root becomes the child
                 for child in mctsearcher.children:
                     if child.parent_action == has_played:
                         self.MCTSearchers[i] = child
@@ -117,20 +153,34 @@ class Engine:
     @staticmethod
     def run_mcts(i: int, mctsearcher: MonteCarloTreeSearchNode, time_allocated: float):
         """
+        Calls the perform_iterations on a single MCTSearcher.
 
         :param i: the index of the mctsearcher in the MCTSearchers list
         :param mctsearcher: a mctsearcher
-        :param time_allocated: time allocated to play a move
+        :param time_allocated: the time allocated to play a move
         :return: the index, the mctsearcher, its children and the mean game length
         """
 
         mean_game_length = mctsearcher.perform_iterations(time_allocated)
 
+        # We return the mctsearcher because the original mctsearcher
+        # doesn't update automatically (because of parallelization)
         return i, mctsearcher, mctsearcher.children, mean_game_length
 
-    def return_best_move(self, time_left: float) -> ActionDodo:
+    def return_best_move(self, time_left: float) -> Action:
+        """
+        Returns the best move based on the results of all the MCTSearchers.
+
+        :param time_left: the time allocated to make a move
+        :return: a legal action
+        """
+
+        # The time allocated should be 2 times the time_left/previous_mean_game_length
+        # Indeed, previous_mean_game_length is the number of half-moves (for the 2 players)
         time_allocated: float = 2 * (time_left / self.previous_mean_game_length)
 
+        # Root-parallelization or not we return a list of tuples:
+        # [(index, mctsearcher, its children, mean_game_length), ...]
         if self.root_parallelization:
             with ProcessPoolExecutor() as executor:
                 futures = [
@@ -143,8 +193,16 @@ class Engine:
             mean_game_length: float = self.MCTSearchers[0].perform_iterations(
                 time_allocated
             )
-            results = [(0, self.MCTSearchers[0], self.MCTSearchers[0].children, mean_game_length)]
+            results = [
+                (
+                    0,
+                    self.MCTSearchers[0],
+                    self.MCTSearchers[0].children,
+                    mean_game_length,
+                )
+            ]
 
+        # We aggregate the results of the different trees with a dictionary
         root_visits: dict[Action, int] = defaultdict(int)
         mean_game_lengths = []
 
@@ -154,90 +212,75 @@ class Engine:
                 root_visits[child.parent_action] += child.N
                 mean_game_lengths.append(mean_game_length)
 
+        # We select the best move based on the number of visits
         best_root = max(root_visits, key=root_visits.get)
         print(root_visits)
         print(best_root)
 
-        mean_game_length = sum(mean_game_lengths)/len(mean_game_lengths)
+        # We compute the next mean game length
+        mean_game_length = sum(mean_game_lengths) / len(mean_game_lengths)
 
-        self.update_state(best_root)
+        # We update the mctsearchers based on the move chosen
+        self.update(best_root)
+        self.previous_mean_game_length = mean_game_length
+        print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
 
-        if mean_game_length is not None:
-            self.previous_mean_game_length = mean_game_length
-            print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
         for mctsearcher in self.MCTSearchers:
             print(mctsearcher)
+
         return best_root
 
 
 class EngineDodo(Engine):
     """
-    Extend the Engine class for Dodo.
+    Extends the Engine class for Dodo.
     """
 
-    def __init__(
+    def generate_mctsearcher(
         self,
         state: State,
-        player: Player,
         hex_size: int,
-        total_time: Time,
+        player: Player,
         c_param: float,
-        improved_playout: bool = False,
-        root_parallelization: bool = False,
-    ):
+        improved_playout: bool,
+    ) -> MonteCarloTreeSearchNode:
+        """
+        Extends the generate mctsearcher method of Engine.
+        Generates a single instance of MonteCarloTreeSearchNode, adapted to Dodo.
 
-        super().__init__(
-            state,
+        :param state: a state
+        :param hex_size: the size of the board
+        :param player: a player
+        :param c_param: the c exploration parameter
+        :param improved_playout: a boolean indicating if we perform minmax playout or not
+        :return: an instance of MonteCarloTreeSearchNode
+        """
+
+        return MonteCarloTreeSearchNode(
+            GameStateDodo(
+                self.board_utils.state_to_dict(state),
+                player,
+                hex_size,
+                self.board_utils.r_pov_neighbors,
+                self.board_utils.b_pov_neighbors,
+                self.board_utils.cell_keys,
+                self.board_utils.turn_key,
+                self.board_utils.start_hash,
+            ),
             player,
-            hex_size,
-            total_time,
             c_param,
             improved_playout,
-            root_parallelization,
         )
 
-    def generate_mctsearchers(
-        self, state, hex_size, player, c_param, improved_playout
-    ) -> list[MonteCarloTreeSearchNode]:
-        if self.root_parallelization:
-            return [
-                MonteCarloTreeSearchNode(
-                    GameStateDodo(
-                        self.board_utils.state_to_dict(state),
-                        player,
-                        hex_size,
-                        self.board_utils.r_pov_neighbors,
-                        self.board_utils.b_pov_neighbors,
-                        self.board_utils.cell_keys,
-                        self.board_utils.turn_key,
-                        self.board_utils.start_hash,
-                    ),
-                    player,
-                    c_param,
-                    improved_playout,
-                )
-                for _ in range(4)
-            ]
-        else:
-            return [
-                MonteCarloTreeSearchNode(
-                    GameStateDodo(
-                        self.board_utils.state_to_dict(state),
-                        player,
-                        hex_size,
-                        self.board_utils.r_pov_neighbors,
-                        self.board_utils.b_pov_neighbors,
-                        self.board_utils.cell_keys,
-                        self.board_utils.turn_key,
-                        self.board_utils.start_hash,
-                    ),
-                    player,
-                    c_param,
-                    improved_playout,
-                )
-            ]
-
     def has_played(self, state: State):
+        """
+        Extends the has_played method of Engine.
+        Returns the Dodo action the opponent has played based on the new state we receive.
+
+        :param state: a game state
+        :return: the action the opponent has played
+        """
+
         grid = self.board_utils.state_to_dict(state)
         current_legals: list[ActionDodo] = self.MCTSearchers[
             0
@@ -252,73 +295,58 @@ class EngineDodo(Engine):
 
 class EngineGopher(Engine):
     """
-    Extend the Engine class for Gopher.
+    Extends the Engine class for Gopher.
     """
 
-    def __init__(
+    def generate_mctsearcher(
         self,
         state: State,
-        player: Player,
         hex_size: int,
-        total_time: Time,
+        player: Player,
         c_param: float,
         improved_playout: bool,
-        root_parallelization: bool,
     ):
+        """
+        Extends the generate mctsearcher method of Engine.
+        Generate a single instance of MonteCarloTreeSearchNode, adapted to Gopher.
 
-        super().__init__(
-            state,
+        :param state: a state
+        :param hex_size: the size of the board
+        :param player: a player
+        :param c_param: the c exploration parameter
+        :param improved_playout: a boolean indicating if we perform minmax playout or not
+        :return: an instance of MonteCarloTreeSearchNode
+        """
+
+        return MonteCarloTreeSearchNode(
+            GameStateGopher(
+                self.board_utils.state_to_dict(state),
+                player,
+                hex_size,
+                self.board_utils.neighbors,
+                self.board_utils.cell_keys,
+                self.board_utils.turn_key,
+                self.board_utils.start_hash,
+            ),
             player,
-            hex_size,
-            total_time,
             c_param,
             improved_playout,
-            root_parallelization,
         )
 
-    def generate_mctsearchers(self, state, hex_size, player, c_param, improved_playout):
-        if self.root_parallelization == 1:
-            return [
-                MonteCarloTreeSearchNode(
-                    GameStateGopher(
-                        self.board_utils.state_to_dict(state),
-                        player,
-                        hex_size,
-                        self.board_utils.neighbors,
-                        self.board_utils.cell_keys,
-                        self.board_utils.turn_key,
-                        self.board_utils.start_hash,
-                    ),
-                    player,
-                    c_param,
-                    improved_playout,
-                )
-                for _ in range(8)
-            ]
-        else:
-            return [
-                MonteCarloTreeSearchNode(
-                    GameStateGopher(
-                        self.board_utils.state_to_dict(state),
-                        player,
-                        hex_size,
-                        self.board_utils.neighbors,
-                        self.board_utils.cell_keys,
-                        self.board_utils.turn_key,
-                        self.board_utils.start_hash,
-                    ),
-                    player,
-                    c_param,
-                    improved_playout,
-                )
-            ]
-
     def has_played(self, state: State):
+        """
+        Extends the has_played method of Engine.
+        Returns the Gopher action the opponent has played based on the new state we receive.
+
+        :param state: a game state
+        :return: the action the opponent has played
+        """
+
         grid = self.board_utils.state_to_dict(state)
-        current_legals: list[ActionDodo] = self.MCTSearchers[
+        current_legals: list[ActionGopher] = self.MCTSearchers[
             0
         ].state.get_legal_actions()
-        has_played: Optional[ActionDodo] = None
+        has_played: Optional[ActionGopher] = None
         for legal in current_legals:
             if grid[legal] == self.opponent:
                 has_played = legal

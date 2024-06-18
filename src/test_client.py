@@ -12,15 +12,15 @@ def initialize(
     game: str, state: State, player: Player, hex_size: int, total_time: Time
 ) -> Environment:
     if game.lower() == "dodo":
-        return EngineDodo(state, player, hex_size, total_time, 1.41, False, 2)
+        return EngineDodo(state, player, hex_size, total_time, 1.41, False, False)
     else:
-        return EngineGopher(state, player, hex_size, total_time, 1.41, False, 2)
+        return EngineGopher(state, player, hex_size, total_time, 1.41, False, False)
 
 
 def strategy_brain(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
-    env.update_state(state)
+    env.update(env.has_played(state))
     best_action: Action = env.return_best_move(time_left)
     return env, best_action
 

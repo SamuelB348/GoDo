@@ -64,7 +64,9 @@ class MonteCarloTreeSearchNode:
         self.Q: int = 0
 
         # The list of the actions to explore if the tree is not fully expanded
-        self.untried_actions: Union[list[ActionDodo], list[ActionGopher]] = self.initialize_actions()
+        self.untried_actions: Union[list[ActionDodo], list[ActionGopher]] = (
+            self.initialize_actions()
+        )
 
         # The player we're playing for during all the game
         self.player: Player = player

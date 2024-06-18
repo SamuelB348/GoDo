@@ -52,23 +52,35 @@ def initialize(
     root_parallelization: bool,
 ) -> Environment:
     if game.lower() == "dodo":
-        return EngineDodo(state, player, hex_size, total_time, c_param, improved_playout, root_parallelization)
+        return EngineDodo(
+            state,
+            player,
+            hex_size,
+            total_time,
+            c_param,
+            improved_playout,
+            root_parallelization,
+        )
     else:
-        return EngineGopher(state, player, hex_size, total_time, c_param, improved_playout, root_parallelization)
+        return EngineGopher(
+            state,
+            player,
+            hex_size,
+            total_time,
+            c_param,
+            improved_playout,
+            root_parallelization,
+        )
 
 
 def strategy(
     env: Environment, state: State, player: Player, time_left: float
 ) -> tuple[Environment, Action]:
-    env.update_state(env.has_played(state))
+    env.update(env.has_played(state))
     if env.MCTSearchers[0].is_terminal_node():
         return env, None
     best_action: Action = env.return_best_move(time_left)
     return env, best_action
-
-
-def final_result(state: State, score: Score, player: Player):
-    pass
 
 
 def new_state_dodo(state: State, action: ActionDodo, player: Player):
@@ -88,9 +100,8 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
-    time_r: float = 300.0
+    time_r: float = 360.0
     time_b: float = 120.0
-    i = 0
     # e1.MCTSearcher.state.pplot()
     # r = RandomAgent(state_tmp, B, size)
     while True:
@@ -231,7 +242,7 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 def main():
     # match(100, 4, 1, False, 2, 2, False, 2)
-    dodo(4, 1, False, True, 1, False, False)
+    dodo(4, 1, False, False, 1, False, False)
     # match(20, 4, 1, False, False, 1, False, False)
     # gopher(6, 1, False, 0, 1, False, 0)
 
