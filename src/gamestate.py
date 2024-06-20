@@ -132,7 +132,7 @@ class GameState:
     def play(self, action, player):
         """
         Plays a move while staying inside the structure.
-        Modifies the structure accordingly, but the modifications are not ment to be permanent.
+        Modifies the structure accordingly, but the modifications are not meant to be permanent.
         Should be implemented in the subclasses.
 
         :param action: a legal action

@@ -3,7 +3,6 @@ This section implements the game engines that manage the game AI (MCTS) and prov
 carry out a full game.
 """
 
-from typing import Optional
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 

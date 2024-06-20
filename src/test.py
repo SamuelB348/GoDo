@@ -1,16 +1,13 @@
 """
 This section implements simple game loops to test the agents.
-It's not ment to be clean code.
+It's not meant to be clean code.
 """
 
-import multiprocessing
 import cProfile
 import pstats
 import random
 import time
 import ast
-import numpy as np
-import matplotlib.pyplot as plt
 
 from types_constants import *
 from agents import EngineDodo, EngineGopher
@@ -20,6 +17,13 @@ Environment = Union[EngineDodo, EngineGopher]
 
 
 def start_board_dodo(size: int) -> State:
+    """
+    Generates a starting board configuration for Dodo.
+
+    :param size: the size of the board
+    :return: a state
+    """
+
     grid: State = []
     n = size - 1
     for r in range(n, -n - 1, -1):
@@ -36,6 +40,13 @@ def start_board_dodo(size: int) -> State:
 
 
 def start_board_gopher(size: int) -> State:
+    """
+    Generates a starting board configuration for Gopher.
+
+    :param size: the size of the board
+    :return: a state
+    """
+
     grid: State = []
     n = size - 1
     for r in range(n, -n - 1, -1):
@@ -56,6 +67,11 @@ def initialize(
     improved_playout: bool,
     root_parallelization: bool,
 ) -> Environment:
+    """
+    Initializes a game environment (an Engine).
+
+    """
+
     if game.lower() == "dodo":
         return EngineDodo(
             state,
@@ -79,8 +95,13 @@ def initialize(
 
 
 def strategy(
-    env: Environment, state: State, player: Player, time_left: float
+    env: Environment, state: State, time_left: float
 ) -> tuple[Environment, Action]:
+    """
+    Returns the action chosen by the environment.
+
+    """
+
     env.update(env.has_played(state))
     if time_left < 120 and len(env.MCTSearchers) > 1:
         env.MCTSearchers = [random.choice(env.MCTSearchers)]
@@ -104,6 +125,11 @@ def new_state_gopher(state: State, action: Action, player: Player):
 
 
 def dodo(size: int, c1, p1, f1, c2, p2, f2):
+    """
+    Game loop for Dodo.
+
+    """
+
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
@@ -112,7 +138,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
 
     while True:
         start_time = time.time()
-        s = strategy(e1, state_tmp, e1.player, time_r)[1]
+        s = strategy(e1, state_tmp, time_r)[1]
         if s is None:
             e1.MCTSearchers[0].state.pplot()
             print(1, end="")
@@ -130,7 +156,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
         # dest = ast.literal_eval(dest)
         # s = (src, dest)
 
-        s = strategy(e2, state_tmp, e2.player, time_b)[1]
+        s = strategy(e2, state_tmp, time_b)[1]
         if s is None:
             e2.MCTSearchers[0].state.pplot()
             print(2, end="")
@@ -140,6 +166,11 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
 
 
 def gopher(size: int, c1, p1, f1, c2, p2, f2):
+    """
+    Game loop for Gopher.
+
+    """
+
     state_tmp = start_board_gopher(size)
     e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
@@ -148,7 +179,7 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
 
     while True:
         start_time = time.time()
-        s = strategy(e1, state_tmp, e1.player, time_r)[1]
+        s = strategy(e1, state_tmp, time_r)[1]
         if s is None:
             e1.MCTSearchers[0].state.pplot()
             print(2, end="")
@@ -162,7 +193,7 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
             e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
 
         start_time = time.time()
-        s = strategy(e2, state_tmp, e2.player, time_b)[1]
+        s = strategy(e2, state_tmp, time_b)[1]
         # dest = input("Tuple dest :")
         # dest = ast.literal_eval(dest)
         # s = dest
@@ -177,9 +208,9 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
 
 def main():
     # match(100, 4, 1, False, 2, 2, False, 2)
-    # dodo(4, 1, False, False, 1, False, False)
+    dodo(4, 1, False, False, 3, False, False)
     # match(20, 4, 0.5, False, False, 1, False, False)
-    gopher(6, 1, False, False, 1, False, False)
+    # gopher(6, 1, False, False, 1, False, False)
 
 
 if __name__ == "__main__":

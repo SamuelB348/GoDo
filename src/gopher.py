@@ -179,7 +179,7 @@ class GameStateGopher(GameState):
         """
         Extends the play method of GameState.
         Play an action and modify the structure accordingly. Unlike the move method, here we stay
-        inside the current structure. The modifications are not ment to be permanent.
+        inside the current structure. The modifications are not meant to be permanent.
 
         :param action: a legal action
         :param player: the player whose turn it is
