@@ -1,6 +1,5 @@
-import numpy as np
-from testing_dodo import *
-from other import *
+import cProfile
+import pstats
 
 
 def main():
@@ -9,16 +8,16 @@ def main():
     # DODO
     ##########################
 
-    d: Environment = initialize("dodo", start_board_dodo(4), R, 4, 100)
-    d.pplot()
-
     ##########################
     # GOPHER
     ##########################
-
-    g: Environment = initialize("gopher", start_board_gopher(4), R, 4, 100)
-    g.pplot()
+    pass
 
 
 if __name__ == "__main__":
+    profiler = cProfile.Profile()
+    profiler.enable()
     main()
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats("tottime")
+    stats.print_stats()
