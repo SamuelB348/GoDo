@@ -40,5 +40,5 @@ rm config.json server.json
 
 ```bash
 # lancer le client
-python test_client.py 12 toto totovelo
+python main.py 12 toto totovelo
 ```

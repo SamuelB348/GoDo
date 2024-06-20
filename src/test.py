@@ -1,3 +1,8 @@
+"""
+This section implements simple game loops to test the agents.
+It's not ment to be clean code.
+"""
+
 import multiprocessing
 import cProfile
 import pstats
@@ -8,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from types_constants import *
-from utils import print_percentage_bar
 from agents import EngineDodo, EngineGopher
 
 
@@ -105,8 +109,7 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     e2 = None
     time_r: float = 300.0
     time_b: float = 300.0
-    # e1.MCTSearcher.state.pplot()
-    # r = RandomAgent(state_tmp, B, size)
+
     while True:
         start_time = time.time()
         s = strategy(e1, state_tmp, e1.player, time_r)[1]
@@ -120,11 +123,6 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
         if e2 is None:
             e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
         start_time = time.time()
-        # r.update_state(state_tmp)
-        # if r.is_final():
-        #     print(2, end="")
-        #     return -1
-        # s = r.get_action()
 
         # src = input("Tuple source :")
         # src = ast.literal_eval(src)
@@ -156,7 +154,7 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
             print(2, end="")
             return -1
         time_r -= time.time() - start_time
-        # print(time_r)
+
         new_state_gopher(state_tmp, s, R)
         e1.MCTSearchers[0].state.pplot()
 
@@ -175,72 +173,6 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
         time_b -= time.time() - start_time
         new_state_gopher(state_tmp, s, B)
         # e2.MCTSearchers[0].state.pplot()
-
-
-def wrapper(args):
-    c1, p1, f1, c2, p2, f2, size = args
-    return dodo(size, c1, p1, f1, c2, p2, f2)
-
-
-def match(nb_games: int, size: int, c1, p1, f1, c2, p2, f2):
-    nb_wins = 0
-    nb_losses = 0
-
-    with multiprocessing.Pool() as pool:
-        args_list = [(c1, p1, f1, c2, p2, f2, size)] * (nb_games // 2)
-        results = pool.map(wrapper, args_list)
-
-    for result in results:
-        if result == 1:
-            nb_wins += 1
-        else:
-            nb_losses += 1
-
-    with multiprocessing.Pool() as pool:
-        args_list = [(c2, p2, f2, c1, p1, f1, size)] * (nb_games // 2)
-        results = pool.map(wrapper, args_list)
-    for result in results:
-        if result == -1:
-            nb_wins += 1
-        else:
-            nb_losses += 1
-
-    print(f"\n({c1:.3f}, {p1}, {f1}) vs ({c2:.3f}, {p2}, {f2})")
-    print_percentage_bar(nb_wins / nb_games, nb_losses / nb_games, nb_games)
-    return nb_wins, nb_losses
-
-
-def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
-    best_coeffs = np.array([0.17653504])
-    list_best_coeff = []
-    count = 0
-    while True:
-        deltas = np.random.normal(0, 0.1, 1)
-        coeffs_a = best_coeffs + deltas
-        coeffs_b = best_coeffs - deltas
-
-        # S'assurer que les coefficients restent positifs
-        coeffs_a[0] = max(coeffs_a[0], 0)
-        coeffs_b[0] = max(coeffs_b[0], 0)
-
-        results = match(nb_games, grid_size, coeffs_a[0], coeffs_b[0])
-
-        if results[0] > 0.6 * nb_games:  # coeffs_a ont gagné
-            best_coeffs = best_coeffs + (coeffs_a - best_coeffs) * factor
-        elif results[0] < 0.4 * nb_games:
-            best_coeffs = best_coeffs + (coeffs_b - best_coeffs) * factor
-
-        list_best_coeff.append(best_coeffs[0])
-        print(best_coeffs)
-
-        if count % 2 == 0:
-            plt.plot(list_best_coeff)
-            plt.xlabel("Iteration")
-            plt.ylabel("Best Coefficient")
-            plt.title("Tuning Coefficient Over Time")
-            plt.show()
-
-        count += 1
 
 
 def main():
