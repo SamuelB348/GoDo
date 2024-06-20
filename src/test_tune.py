@@ -1,6 +1,7 @@
 import multiprocessing
 import cProfile
 import pstats
+import random
 import time
 import ast
 import numpy as np
@@ -77,6 +78,8 @@ def strategy(
     env: Environment, state: State, player: Player, time_left: float
 ) -> tuple[Environment, Action]:
     env.update(env.has_played(state))
+    if time_left < 120 and len(env.MCTSearchers) > 1:
+        env.MCTSearchers = [random.choice(env.MCTSearchers)]
     if env.MCTSearchers[0].is_terminal_node():
         return env, None
     best_action: Action = env.return_best_move(time_left)
@@ -100,8 +103,8 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_dodo(size)
     e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
-    time_r: float = 360.0
-    time_b: float = 120.0
+    time_r: float = 300.0
+    time_b: float = 300.0
     # e1.MCTSearcher.state.pplot()
     # r = RandomAgent(state_tmp, B, size)
     while True:
@@ -142,8 +145,8 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
     state_tmp = start_board_gopher(size)
     e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
     e2 = None
-    time_r: float = 120.0
-    time_b: float = 120.0
+    time_r: float = 150.
+    time_b: float = 150.
 
     while True:
         start_time = time.time()
@@ -153,7 +156,7 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
             print(2, end="")
             return -1
         time_r -= time.time() - start_time
-        print(time_r)
+        # print(time_r)
         new_state_gopher(state_tmp, s, R)
         e1.MCTSearchers[0].state.pplot()
 
@@ -242,9 +245,9 @@ def tuning_dodo(grid_size: int, nb_games: int, factor: float = 0.01):
 
 def main():
     # match(100, 4, 1, False, 2, 2, False, 2)
-    dodo(4, 1, False, False, 1, False, False)
-    # match(20, 4, 1, False, False, 1, False, False)
-    # gopher(6, 1, False, 0, 1, False, 0)
+    # dodo(4, 1, False, False, 1, False, False)
+    # match(20, 4, 0.5, False, False, 1, False, False)
+    gopher(6, 1, False, False, 1, False, False)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,9 @@ class GameState:
     """
     GameState class encapsulating all the logic and methods essential to play moves,
     generate legal actions, simulate a whole game from the current position, etc...
+
+    The abstract methods (implemented in the subclasses) ar intentionally not typed.
+    Types are defined in the subclasses.
     """
 
     def __init__(
@@ -307,12 +310,12 @@ class GameState:
             )
 
             plt.gca().add_patch(polygon)
-            plt.text(
-                center.x,
-                center.y,
-                f"{box[0]}, {box[1]}",
-                horizontalalignment="right",
-            )
+            # plt.text(
+            #     center.x,
+            #     center.y,
+            #     f"{box[0]}, {box[1]}",
+            #     horizontalalignment="right",
+            # )
         plt.xlim(-2 * self.size - 1, 2 * self.size + 1)
         plt.ylim(-2 * self.size - 1, 2 * self.size + 1)
         plt.show()

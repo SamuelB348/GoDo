@@ -220,7 +220,7 @@ class GameStateGopher(GameState):
 
         self.empty_cells.add(action)
 
-    def evaluate(self, legals: list[ActionGopher], player: Player):
+    def evaluate(self, legals: list[ActionGopher], player: Player) -> float:
         """
         Extends the evaluate method of GameState.
         Perform a very simple heuristic evaluation function for alphabeta:

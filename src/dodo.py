@@ -37,7 +37,7 @@ class GameStateDodo(GameState):
     def empty_grid(self) -> bool:
         """
         Extends the empty_grid method of GameState.
-        Always return False for dodo.
+        Always return False for Dodo.
 
         :return: a boolean
         """

@@ -1,5 +1,5 @@
 """
-This section implements a class that contains hexagonal board utilities.
+This section implements a class that contains hexagonal boards utilities.
 """
 
 import random
@@ -84,9 +84,11 @@ class BoardUtils:
             """
 
             key: int = random.getrandbits(64)
+
             while key in used_keys:
                 key = random.getrandbits(64)
             used_keys.add(key)
+
             return key
 
         for cell in self.cells:
@@ -115,7 +117,7 @@ class BoardUtils:
 
         return start_hash
 
-    def state_to_dict(self, state: State):
+    def state_to_dict(self, state: State) -> Grid:
         """
         Converts a state in the form of a list[(cell, player)] into a dictionary dict[cell: player].
 

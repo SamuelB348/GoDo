@@ -37,7 +37,7 @@ class MonteCarloTreeSearchNode:
 
     # A cache containing the hash of the previously seen positions, and the associated gain.
     # Key is a hash, value is a list [nb_visits, nb_victories]
-    STATE_CACHE: dict[int, list[int]] = {}
+    STATE_CACHE: dict[int, list[float]] = {}
 
     def __init__(
         self,
@@ -59,9 +59,9 @@ class MonteCarloTreeSearchNode:
         # The list of the explored children (starting empty)
         self.children: list[MonteCarloTreeSearchNode] = []
         # The number of visits
-        self.N: int = 0
+        self.N: float = 0.0
         # The number of victories
-        self.Q: int = 0
+        self.Q: float = 0.0
 
         # The list of the actions to explore if the tree is not fully expanded
         self.untried_actions: Union[list[ActionDodo], list[ActionGopher]] = (
@@ -124,7 +124,7 @@ class MonteCarloTreeSearchNode:
 
         return self.state.is_game_over()
 
-    def rollout(self) -> tuple[int, int, int]:
+    def rollout(self) -> tuple[float, float, int]:
         """
         Executes a rollout from this node, i.e. a simulation. Based on the result of the game,
         it returns 1 (victory) or 0 (defeat).
@@ -141,29 +141,29 @@ class MonteCarloTreeSearchNode:
         if (
             result != self.state.turn
         ):  # Reward for the player who has played, not the one who must play
-            reward: int = 1
+            reward: float = 1.0
         else:
-            reward = 0
+            reward = 0.0
 
         # We add up the result of the simulation and the previous results of the transposition table
         # of the current position. These previous results are contained in the STATE_CACHE
         if self.state.hash in MonteCarloTreeSearchNode.STATE_CACHE:
-            additional_visits: int = MonteCarloTreeSearchNode.STATE_CACHE[
+            additional_visits: float = MonteCarloTreeSearchNode.STATE_CACHE[
                 self.state.hash
             ][0]
-            additional_result: int = MonteCarloTreeSearchNode.STATE_CACHE[
+            additional_result: float = MonteCarloTreeSearchNode.STATE_CACHE[
                 self.state.hash
             ][1]
-            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0] += 1
+            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][0] += 1.0
             MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash][1] += reward
         else:
-            additional_visits = 0
-            additional_result = 0
-            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash] = [1, reward]
+            additional_visits = 0.0
+            additional_result = 0.0
+            MonteCarloTreeSearchNode.STATE_CACHE[self.state.hash] = [1.0, reward]
 
         return reward + additional_result, 1 + additional_visits, game_length
 
-    def backpropagate(self, reward: int, visits: int) -> None:
+    def backpropagate(self, reward: float, visits: float) -> None:
         """
         Backpropagation of the reward to the current node and its ancestors.
 
@@ -210,7 +210,7 @@ class MonteCarloTreeSearchNode:
         :return: a child node of the current node
         """
 
-        choices_weight: list[int] = [c.N for c in self.children]
+        choices_weight: list[float] = [c.N for c in self.children]
         return self.children[np.argmax(choices_weight)]
 
     def _tree_policy(self) -> MonteCarloTreeSearchNode:
@@ -222,14 +222,18 @@ class MonteCarloTreeSearchNode:
         :return: a node to perform a rollout from
         """
 
+        # count = 0
         current_node: MonteCarloTreeSearchNode = self
         while not current_node.is_terminal_node():
 
             if not current_node.is_fully_expanded():
+                # count+=1
+                # print(count)
                 return current_node.expand()
 
             current_node = current_node.best_child()
-
+            # count+=1
+        # print(count)
         return current_node
 
     def perform_iterations(self, allocated_time: float) -> float:
@@ -259,9 +263,9 @@ class MonteCarloTreeSearchNode:
             # time (it's an estimation), then we can safely stop and save time
             if simulation_count % 200 == 0:
                 first_visited, second_visited = self.get_two_most_visited()
-                time_spent = time.time() - start_time
-                time_left = allocated_time - time_spent
-                if (
+                time_spent: float = time.time() - start_time
+                time_left: float = allocated_time - time_spent
+                if (time_spent > 0) and (
                     simulation_count * (time_left / time_spent)
                     < first_visited - second_visited
                 ):

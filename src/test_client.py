@@ -3,23 +3,26 @@
 import ast
 import argparse
 from typing import Dict, Any
+import random
 from gndclient import start, Action, Score, Player, State, Time, DODO_STR, GOPHER_STR
-
 from agents import *
 
 
 def initialize(
     game: str, state: State, player: Player, hex_size: int, total_time: Time
 ) -> Environment:
+    print("je joue", player)
     if game.lower() == "dodo":
-        return EngineDodo(state, player, hex_size, total_time, 1.41, False, False)
+        return EngineDodo(state, player, hex_size, total_time, 1, False, False)
     else:
-        return EngineGopher(state, player, hex_size, total_time, 1.41, False, False)
+        return EngineGopher(state, player, hex_size, total_time, 1, False, False)
 
 
-def strategy_brain(
+def strategy(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
+    if time_left < 120 and len(env.MCTSearchers) > 1:
+        env.MCTSearchers = random.choice(env.MCTSearchers)
     env.update(env.has_played(state))
     best_action: Action = env.return_best_move(time_left)
     return env, best_action
@@ -38,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument("group_id")
     parser.add_argument("members")
     parser.add_argument("password")
-    parser.add_argument("-s", "--server-url", default="http://localhost:8080/")
+    parser.add_argument("-s", "--server-url", default="http://lchappuis.fr:8080/")
     parser.add_argument("-d", "--disable-dodo", action="store_true")
     parser.add_argument("-g", "--disable-gopher", action="store_true")
     args = parser.parse_args()
@@ -56,7 +59,7 @@ if __name__ == "__main__":
         args.password,
         available_games,
         initialize,
-        strategy_brain,
+        strategy,
         final_result,
         gui=True,
     )
