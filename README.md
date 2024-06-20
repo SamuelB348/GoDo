@@ -1,4 +1,4 @@
-# DoGo : an AI for the games of Dodo and Gopher
+# GoDo : an AI for the games of Gopher and Dodo
 
 This repository contains the code for two AI game agents: one for ["Dodo"](https://www.marksteeregames.com/Dodo_rules.pdf) and the other for ["Gopher"](https://www.marksteeregames.com/Gopher_hex_rules.pdf). These are 2 Mark Steere games :red_circle::large_blue_circle:.
 
