@@ -14,6 +14,7 @@ This repository contains the code for two AI game agents: one for ["Dodo"](https
 These AIs are fully written in Python 3 :snake:.
 
 ## Credits
+- Thanks to all the IA02 professors at the UTC (Université de Technologie de Compiègne) for this very interesting project.
 - Thanks to [Mark Steere](https://www.marksteeregames.com/) for these 2 great games that were fun to program.
 - Thanks to [this page](https://ai-boson.github.io/mcts/) that helped us a lot going through MCTS implementation.
 - A big thanks to [this article](https://www.redblobgames.com/grids/hexagons/) that helped us understand hexagonal grids and their representations.
