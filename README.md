@@ -32,8 +32,12 @@ mypy src --exclude 'test.py|main.py|gndclient.py'
 ```
 
 ### How to run the program
-Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`).
-If you want to play with the different features of our AI, you can go inside the `main.py` file, go to the `initialize` function and change the parameters inside the Engine class (one is called `improved_playout` and the other is called `root_parallelization`.
+Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`):
+```
+py main.py 12 "toto" "test"
+```
+
+If you want to play with the different features of our AI, you can go inside the `main.py` file, go to the `initialize` function and change the parameters inside the EngineDodo/EngineGopher classes (one is called `improved_playout` and the other is called `root_parallelization`, you can set them to `True`).
 
 If you really want to test the `test.py` you can do it, you just have to choose the game you want to launch in the `main()` function, and you can run the program. It will display the grid as a plot.
 
