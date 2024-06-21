@@ -34,8 +34,8 @@ class GameStateGopher(GameState):
 
     def empty_grid(self) -> bool:
         """
-        Extend the empty_grid method of GameState.
-        Return False if there is at least one cell occupied.
+        Extends the empty_grid method of GameState.
+        Returns False if there is at least one cell occupied.
 
         :return: a boolean
         """
@@ -47,8 +47,8 @@ class GameStateGopher(GameState):
 
     def generate_legal_actions(self, player: Player) -> list[ActionGopher]:
         """
-        Extend the generate_legal_actions method of GameState.
-        Generate all the legal actions of the player.
+        Extends the generate_legal_actions method of GameState.
+        Generates all the legal actions of the player.
 
         :param player: the player whose legal moves we will calculate
         :return: a list of legal moves
@@ -87,7 +87,7 @@ class GameStateGopher(GameState):
     def move(self, action: ActionGopher) -> GameStateGopher:
         """
         Extends the move method of GameState.
-        Modify the game state, compute the resulting hash and return a new GameStateGopher.
+        Modifies the game state, computes the resulting hash and returns a new GameStateGopher.
 
         :param action: a legal action
         :return: a new GameStateGopher instance
@@ -114,7 +114,7 @@ class GameStateGopher(GameState):
     def simulate_game(self, improved_playout) -> tuple[Player, int]:
         """
         Extends the simulate_game method of GameState.
-        Simulate a game from the current game state. Here we stay inside the current structure,
+        Simulates a game from the current game state. Here we stay inside the current structure,
         therefore we will need to save the state before simulating and to restore it after.
 
         :param improved_playout: boolean indicating if it should perform minmax playouts or not.
@@ -178,7 +178,7 @@ class GameStateGopher(GameState):
     def play(self, action: ActionGopher, player: Player) -> None:
         """
         Extends the play method of GameState.
-        Play an action and modify the structure accordingly. Unlike the move method, here we stay
+        Plays an action and modify the structure accordingly. Unlike the move method, here we stay
         inside the current structure. The modifications are not meant to be permanent.
 
         :param action: a legal action
@@ -200,7 +200,7 @@ class GameStateGopher(GameState):
     def undo(self, action: ActionGopher, player: Player) -> None:
         """
         Extends the undo method of GameState.
-        Undo an action and modify the structure accordingly. Unlike the move method, here we stay
+        Undoes an action and modify the structure accordingly. Unlike the move method, here we stay
         inside the current game state structure. It is intended to be used when using alphabeta.
 
         :param action: a legal action to be undone
@@ -223,7 +223,7 @@ class GameStateGopher(GameState):
     def evaluate(self, legals: list[ActionGopher], player: Player) -> float:
         """
         Extends the evaluate method of GameState.
-        Perform a very simple heuristic evaluation function for alphabeta:
+        Performs a very simple heuristic evaluation function for alphabeta:
         - The more the player has legal actions, the best.
         - The more the opponent of the player has legal actions, the worst.
 
