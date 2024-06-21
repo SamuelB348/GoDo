@@ -1,5 +1,5 @@
 """
-This section give some utilities to manipulate efficiently hexagonal grids and their
+This section gives some utilities to manipulate efficiently hexagonal grids and their
 representations.
 
 It was made possible thanks to: https://www.redblobgames.com/grids/hexagons/
@@ -41,7 +41,7 @@ hex_directions: list[tuple[int, int]] = [
 
 def hex_direction(direction: int) -> Cell:
     """
-    Return a direction based on it's index in the hex_directions list.
+    Returns a direction based on its index in the hex_directions list.
 
     :param direction: the index of the direction in the hex_directions list
     :return: the corresponding direction as a tuple
@@ -52,7 +52,7 @@ def hex_direction(direction: int) -> Cell:
 
 def neighbor(h: Cell, direction: int):
     """
-    Compute the neighbor Cell of h, given a certain direction.
+    Computes the neighbor Cell of h, given a certain direction.
 
     :param h: a hexagonal cell
     :param direction: the index of the direction in the hex_directions list
@@ -121,7 +121,7 @@ layout_flat: Orientation = Orientation(
 
 def hex_to_pixel(layout: Layout, h: Cell) -> Point:
     """
-    Convert a hexagonal Cell into a pixel (i.e. a point in the plane) given a certain Layout.
+    Converts a hexagonal Cell into a pixel (i.e. a point in the plane) given a certain Layout.
 
     :param layout: a Layout, as defined above
     :param h: a hexagonal Cell you want to convert into a pixel (a Point)
@@ -138,7 +138,7 @@ def hex_to_pixel(layout: Layout, h: Cell) -> Point:
 
 def hex_corner_offset(layout: Layout, corner: int) -> Point:
     """
-    Compute the offset you must apply to any Cell to have the coordinates of one of the 6 corners.
+    Computes the offset you must apply to any Cell to have the coordinates of one of the 6 corners.
 
     :param layout: a Layout, as defined above
     :param corner: an integer representing one of the 6 corners around a hexagonal Cell
