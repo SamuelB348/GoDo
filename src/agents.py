@@ -182,6 +182,8 @@ class Engine:
         # Indeed, previous_mean_game_length is the number of half-moves (for the 2 players)
         time_allocated: float = 2 * (time_left / self.previous_mean_game_length)
 
+        print(f"Time left: {time_left:.2f}, time allocated: {time_allocated:.2f}")
+
         # Root-parallelization or not, we return a list of tuples:
         # [(index, mctsearcher, its children, mean_game_length), ...]
         if self.root_parallelization:
@@ -217,9 +219,6 @@ class Engine:
                 mean_game_lengths.append(mean_game_length)
 
         # We select the best move based on the number of visits
-        if len(root_visits) == 0:  # This happens sometimes
-            # I guess because it ran out of time
-            print(f"{time_left:.2f}, {time_allocated:.2f}")
         assert len(root_visits) > 0
         best_root = max(root_visits, key=root_visits.get)
 
@@ -231,10 +230,11 @@ class Engine:
         self.update(best_root)
         self.previous_mean_game_length = mean_game_length
 
-        print(root_visits)
-        print(f"{time_left:.2f}, {time_allocated:.2f}, {mean_game_length:.2f}")
+        print(f"Mean game length: {mean_game_length:.2f}")
+        print("Chosen node:")
         for mctsearcher in self.MCTSearchers:
             print(mctsearcher)
+        print()
 
         return best_root
 

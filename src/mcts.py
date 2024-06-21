@@ -222,18 +222,14 @@ class MonteCarloTreeSearchNode:
         :return: a node to perform a rollout from
         """
 
-        # count = 0
         current_node: MonteCarloTreeSearchNode = self
         while not current_node.is_terminal_node():
 
             if not current_node.is_fully_expanded():
-                # count+=1
-                # print(count)
                 return current_node.expand()
 
             current_node = current_node.best_child()
-            # count+=1
-        # print(count)
+
         return current_node
 
     def perform_iterations(self, allocated_time: float) -> float:
@@ -278,7 +274,7 @@ class MonteCarloTreeSearchNode:
                 ):
                     break
 
-        print(simulation_count)
+        print(f"Simulations performed: {simulation_count}")
         # Here, to avoid any problem we set the minimum game length to return to 4,
         return max(int(length_count / simulation_count), 4)
 

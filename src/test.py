@@ -122,16 +122,25 @@ def new_state_dodo(state: State, action: ActionDodo, player: Player):
 
 def new_state_gopher(state: State, action: Action, player: Player):
     state.append((action, player))
+    state.remove((action, 0))
 
 
-def dodo(size: int, c1, p1, f1, c2, p2, f2):
+def dodo(
+        size: int,
+        c_param1,
+        improved_playout1,
+        root_parallelization1,
+        c_param2,
+        improved_playout2,
+        root_parallelization2
+):
     """
     Game loop for Dodo.
 
     """
 
     state_tmp = start_board_dodo(size)
-    e1 = initialize("dodo", state_tmp, R, size, 120, c1, p1, f1)
+    e1 = initialize("dodo", state_tmp, R, size, 300, c_param1, improved_playout1, root_parallelization1)
     e2 = None
     time_r: float = 300.0
     time_b: float = 300.0
@@ -146,16 +155,10 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
         time_r -= time.time() - start_time
         new_state_dodo(state_tmp, s, R)
         e1.MCTSearchers[0].state.pplot()
+
         if e2 is None:
-            e2 = initialize("dodo", state_tmp, B, size, 120, c2, p2, f2)
+            e2 = initialize("dodo", state_tmp, B, size, 300, c_param2, improved_playout2, root_parallelization2)
         start_time = time.time()
-
-        # src = input("Tuple source :")
-        # src = ast.literal_eval(src)
-        # dest = input("Tuple dest :")
-        # dest = ast.literal_eval(dest)
-        # s = (src, dest)
-
         s = strategy(e2, state_tmp, time_b)[1]
         if s is None:
             e2.MCTSearchers[0].state.pplot()
@@ -165,14 +168,22 @@ def dodo(size: int, c1, p1, f1, c2, p2, f2):
         new_state_dodo(state_tmp, s, B)
 
 
-def gopher(size: int, c1, p1, f1, c2, p2, f2):
+def gopher(
+        size: int,
+        c_param1,
+        improved_playout1,
+        root_parallelization1,
+        c_param2,
+        improved_playout2,
+        root_parallelization2
+):
     """
     Game loop for Gopher.
 
     """
 
     state_tmp = start_board_gopher(size)
-    e1 = initialize("gopher", state_tmp, R, size, 120, c1, p1, f1)
+    e1 = initialize("gopher", state_tmp, R, size, 150, c_param1, improved_playout1, root_parallelization1)
     e2 = None
     time_r: float = 150.
     time_b: float = 150.
@@ -190,27 +201,20 @@ def gopher(size: int, c1, p1, f1, c2, p2, f2):
         e1.MCTSearchers[0].state.pplot()
 
         if e2 is None:
-            e2 = initialize("gopher", state_tmp, B, size, 120, c2, p2, f2)
-
+            e2 = initialize("gopher", state_tmp, B, size, 150, c_param2, improved_playout2, root_parallelization2)
         start_time = time.time()
         s = strategy(e2, state_tmp, time_b)[1]
-        # dest = input("Tuple dest :")
-        # dest = ast.literal_eval(dest)
-        # s = dest
         if s is None:
             e2.MCTSearchers[0].state.pplot()
             print(1, end="")
             return 1
         time_b -= time.time() - start_time
         new_state_gopher(state_tmp, s, B)
-        # e2.MCTSearchers[0].state.pplot()
 
 
 def main():
-    # match(100, 4, 1, False, 2, 2, False, 2)
-    dodo(4, 1, False, False, 3, False, False)
-    # match(20, 4, 0.5, False, False, 1, False, False)
-    # gopher(6, 1, False, False, 1, False, False)
+    # dodo(4, 1, False, False, 1, False, False)
+    gopher(6, 1, False, False, 1, False, False)
 
 
 if __name__ == "__main__":
