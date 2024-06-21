@@ -6,7 +6,7 @@ from typing import Union
 from collections import namedtuple
 
 
-# -------------------- Communication avec l'arbitre -------------------- #
+# -------------------- Communication with the referee -------------------- #
 
 Cell = tuple[int, int]
 ActionGopher = Cell
@@ -18,7 +18,7 @@ State = list[tuple[Cell, Player]]
 Score = int
 Time = int
 
-# -------------------- Autres alias de types et constantes -------------------- #
+# -------------------- Other type aliases and constants -------------------- #
 
 R: Player = 1
 B: Player = 2
