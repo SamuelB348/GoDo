@@ -17,7 +17,7 @@ from types_constants import *
 
 def argmax(seq: Sequence[float]):
     """
-    Compute the argmax of a sequence of floats.
+    Computes the argmax of a sequence of floats.
 
     :param seq: a sequence of floats
     :return: the argmax of that sequence
@@ -119,7 +119,7 @@ class MonteCarloTreeSearchNode:
         """
         Returns True if this node represents a final situation (someone has won).
 
-        :return: a boolean saying it node is terminal or not
+        :return: a boolean saying if node is terminal or not
         """
 
         return self.state.is_game_over()
@@ -165,7 +165,7 @@ class MonteCarloTreeSearchNode:
 
     def backpropagate(self, reward: float, visits: float) -> None:
         """
-        Backpropagation of the reward to the current node and its ancestors.
+        Backpropagates the reward to the current node and its ancestors.
 
         :param reward: the reward returned from a rollout
         :param visits: the number of visits returned from a rollout
@@ -234,7 +234,7 @@ class MonteCarloTreeSearchNode:
 
     def perform_iterations(self, allocated_time: float) -> float:
         """
-        Perform a certain number of iterations on the current node.
+        Performs a certain number of iterations on the current node.
         This number depends on the allocated time to make a move.
 
         :param allocated_time: time allocated to select an action
@@ -280,7 +280,7 @@ class MonteCarloTreeSearchNode:
 
     def get_two_most_visited(self) -> tuple[float, float]:
         """
-        Returns the number of visits of the tw most visited nodes in the tree.
+        Returns the number of visits of the two most visited nodes in the tree.
 
         :return: a tuple (# visits 1st most visited child, # visits 2nd most visited child)
         """
