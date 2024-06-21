@@ -22,7 +22,14 @@ These AIs are fully written in Python 3 :snake:.
 
 ## For IA02 professors
 ### Evaluation
-You can run `pylint` and `mypy` on the `src` directory. Please do not consider the test.py, gndclient.py, and main.py files for your evaluation. The first is just a testing file for ourselves that is not meant to be evaluated. The two latter are the 2 utilities supplied (test_client.py became main.py).
+You can run `pylint` and `mypy` on the `src` directory. Please do not consider the test.py, gndclient.py, and main.py files for your evaluation. The first is just a testing file for ourselves that is not meant to be evaluated. The two latter are the 2 utilities supplied (test_client.py became main.py). You can use the followings commands:
+```
+pylint src --ignore=test.py,gndserver.exe,gndclient.py,main.py
+```
+and
+```
+mypy src --exclude 'test.py|main.py|gndclient.py'
+```
 
 ### How to run the program
 Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`).
