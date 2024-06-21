@@ -24,7 +24,7 @@ These AIs are fully written in Python 3 :snake:.
 ### Evaluation
 You can run `pylint` and `mypy` on the `src` directory. Please do not consider the test.py, gndclient.py, and main.py files for your evaluation. The first is just a testing file for ourselves that is not meant to be evaluated. The two latter are the 2 utilities supplied (test_client.py became main.py). You can use the followings commands:
 ```
-pylint src --ignore=test.py,gndserver.exe,gndclient.py,main.py
+pylint src --ignore=test.py,gndclient.py,main.py
 ```
 and
 ```
