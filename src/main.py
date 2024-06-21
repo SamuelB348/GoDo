@@ -13,9 +13,25 @@ def initialize(
 ) -> Environment:
     print("je joue", player)
     if game.lower() == "dodo":
-        return EngineDodo(state, player, hex_size, total_time, 1, False, False)
+        return EngineDodo(
+            state, 
+            player, 
+            hex_size, 
+            total_time, 
+            c_param=1, 
+            improved_playout=False, 
+            root_parallelization=False
+        )
     else:
-        return EngineGopher(state, player, hex_size, total_time, 1, False, False)
+        return EngineGopher(
+            state, 
+            player, 
+            hex_size, 
+            total_time, 
+            c_param=1, 
+            improved_playout=False, 
+            root_parallelization=False
+        )
 
 
 def strategy(
