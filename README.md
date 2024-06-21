@@ -26,7 +26,9 @@ You can run `pylint` and `mypy` on the `src` directory. Please do not consider t
 ### How to run the program
 Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`).
 If you want to play with the different features of our AI, you can go inside the `main.py` file, go to the `initialize` function and change the parameters inside the Engine class (one is called `improved_playout` and the other is called `root_parallelization`.
+
 If you really want to test the `test.py` you can do it, you just have to choose the game you want to launch in the `main()` function, and you can run the program. It will display the grid as a plot.
+
 In both cases, our program will print on the terminal some stats on the ongoing game that should be self-explanatory.
 
 ### The cons of our program
