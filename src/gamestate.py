@@ -92,7 +92,7 @@ class GameState:
         """
         Returns the legal actions on the current position.
 
-        :return: l'attribut legals
+        :return: the legals attribute
         """
 
         return self.legals
