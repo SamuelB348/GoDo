@@ -38,6 +38,8 @@ def strategy(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
     # If time falls under 120 s, we stop root parallelization
+    # Otherwise the overhead of multiprocessing will make us lose too much time
+    # Even with this, you may lose on time because you've already lost too much time
     if time_left < 120 and len(env.MCTSearchers) > 1:
         env.MCTSearchers = random.choice(env.MCTSearchers)
     env.update(env.has_played(state))
