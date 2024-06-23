@@ -254,7 +254,7 @@ class MonteCarloTreeSearchNode:
             simulation_count += 1
 
             # Here we manage the time as follows:
-            # If after 200 simulations the gap between the number of visits of the most visited node
+            # If after 200 more simulations the gap between the number of visits of the most visited node
             # and the number of visits of the second most visited can't be filled in the remaining
             # time (it's an estimation), then we can safely stop and save time
             if simulation_count % 200 == 0:
