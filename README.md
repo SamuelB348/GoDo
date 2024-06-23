@@ -32,7 +32,7 @@ mypy src --exclude 'test.py|main.py|gndclient.py'
 ```
 
 ### How to run the program
-Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`):
+Change to the `src` directory. Inside this folder, put the server executable you want (Linux/Mac/Windows). After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`):
 ```
 ./gndserver.exe -game dodo -random
 ```
@@ -47,6 +47,15 @@ If you really want to test the `test.py` you can do it, you just have to choose 
 
 In both cases, our program will print on the terminal some stats on the ongoing game that should be self-explanatory.
 
+### The structure of our program
+To understand how our program works you can directly go inside the different files, they are sufficiently commented and all the key points are explained.
+
+To find your way around:
+- The game logic and state representation are present in the `gamestate.py` file. We use inheritance here, therefore the specificities of Dodo are in `dodo.py` and the ones of Gopher are in `gopher.py`.
+- The MCTS logic is present in the `mcts.py` file.
+- The definition of the agents, that manage the AI during a full game is present in `agents.py`.
+- The rest are utilities.
+  
 ### The cons of our program
 Here are the weaknesses of our program. They are essentially side effects of the different features we implemented:
 - Parallelization in Python can be quite "slow" and add a significant overhead. Therefore, we make many more simulations, but under time pressure it is not adapted (we didn't use it for the tournament). If you try to use it to test our code you may lose on time (we can't control the overhead despite our time management).
