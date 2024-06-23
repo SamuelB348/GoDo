@@ -55,7 +55,7 @@ To find your way around:
 - The MCTS logic is present in the `mcts.py` file.
 - The definition of the agents, that manage the AI during a full game is present in `agents.py`.
 - The rest are utilities.
-  
+
 ### The cons of our program
 Here are the weaknesses of our program. They are essentially side effects of the different features we implemented:
 - Parallelization in Python can be quite "slow" and add a significant overhead. Therefore, we make many more simulations, but under time pressure it is not adapted (we didn't use it for the tournament). If you try to use it to test our code you may lose on time (we can't control the overhead despite our time management).
