@@ -34,6 +34,10 @@ mypy src --exclude 'test.py|main.py|gndclient.py'
 ### How to run the program
 Change to the `src` directory. After that, you can run the commands you gave us to connect to the server and play (be careful `test_client.py` became `main.py`):
 ```
+./gndserver.exe -game dodo -random
+```
+and in another terminal:
+```
 py main.py 12 "toto" "test"
 ```
 
