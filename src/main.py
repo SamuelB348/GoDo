@@ -37,6 +37,7 @@ def initialize(
 def strategy(
     env: Environment, state: State, player: Player, time_left: Time
 ) -> tuple[Environment, Action]:
+    # If time falls under 120 s, we stop root parallelization
     if time_left < 120 and len(env.MCTSearchers) > 1:
         env.MCTSearchers = random.choice(env.MCTSearchers)
     env.update(env.has_played(state))
